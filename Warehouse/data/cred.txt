@@ -1,5 +1,8 @@
 {
-    "Test1": "password",
-    "Finglas":"Finglasingr",
-    "Stillorgan":"Stillorganingr"
+    "warehouse": "warehouse1",
+    "finglas":"finglas1",
+    "stillorgan":"stillorgan1",
+    "bray":"bray1",
+    "drogheda":"drogheda1",
+    "wexford":"wexford1"
 }
