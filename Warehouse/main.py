@@ -229,7 +229,7 @@ def get_product_counts():
     return total_products, category_counts
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/007PageLoginAdminThe007', methods=['GET', 'POST'])
 def index():
     products = load_products()
     username = session.get("username")  # Retrieve the username from the session
