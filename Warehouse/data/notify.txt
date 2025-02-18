@@ -1,0 +1,5 @@
+2025-02-12 10:25:23 : Test1 asked for more stocks of Product ID: 2, Name: COCON GUMMY JELLY GRAPE FLVR 100GM*12, Category: ASIAN SNACKS
+2025-02-12 10:25:25 : Test1 asked for more stocks of Product ID: 2, Name: COCON GUMMY JELLY GRAPE FLVR 100GM*12, Category: ASIAN SNACKS
+2025-02-16 15:25:42 : Test1 asked for more stocks of Product ID: 3, Name: EE GROUND CUMIN 100GM x 20, Category: SPICES 100GM
+2025-02-16 15:26:27 : Test1 asked for more stocks of Product ID: 3, Name: EE GROUND CUMIN 100GM x 20, Category: SPICES 100GM
+2025-02-17 02:06:24 : Test1 asked for more stocks of Product ID: 25, Name: Test, Category: Test
