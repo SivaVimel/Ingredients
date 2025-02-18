@@ -1,5 +1,0 @@
-{
-    "Test1": "password",
-    "Finglas":"Finglasingr",
-    "Stillorgan":"Stillorganingr"
-}
