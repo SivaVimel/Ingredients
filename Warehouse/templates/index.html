@@ -365,7 +365,7 @@
 }
 
 #loginPopup {
-    display: flex;
+    display: none; /* Hide by default to prevent flickering */
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -379,15 +379,15 @@
     overflow: hidden;
 }
 
-#loginPopup .popup-content1 {
+#loginPopup .popup-content {
     background: rgba(255, 255, 255, 0.85);
-    margin-top:10%;
+    margin-top: 10%;
     padding: 20px;
     border-radius: 10px;
     text-align: center;
     width: 500px;
-    height:500px;
-    z-index: 2; /* Ensure content is above the canvas */
+    height: 500px;
+    z-index: 2;
 }
 
 #ordersChart69 {
@@ -1044,17 +1044,19 @@ function closeReportPopup() {
         }
     });
 
-    // Select table rows and exclude the last column
+    // Select only VISIBLE rows and exclude the last column
     const rows = table.querySelectorAll("tbody tr");
     rows.forEach(row => {
-        const rowData = [];
-        const cells = row.querySelectorAll("td");
-        cells.forEach((cell, index) => {
-            if (index < cells.length - 1) { // Skip the last column
-                rowData.push(cell.innerText);
-            }
-        });
-        data.push(rowData);
+        if (row.style.display !== "none") { // Check if the row is visible
+            const rowData = [];
+            const cells = row.querySelectorAll("td");
+            cells.forEach((cell, index) => {
+                if (index < cells.length - 1) { // Skip the last column
+                    rowData.push(cell.innerText);
+                }
+            });
+            data.push(rowData);
+        }
     });
 
     // Use jsPDF's autoTable plugin to convert the filtered table into a PDF
@@ -1066,8 +1068,9 @@ function closeReportPopup() {
     });
 
     // Save the PDF with a name (optional)
-    doc.save('PresentOrders.pdf');
+    doc.save('Orders.pdf');
 }
+
 
 
 
@@ -1431,6 +1434,14 @@ function clearnotify() {
             <select id="dateFilter" onchange="filterOrders()">
                 <option value="all">All Dates</option>
             </select>
+
+            <!-- Custom Date Range Filter -->
+            <label style="margin-left: 20px;" for="fromDate">From:</label>
+            <input type="date" id="fromDate" onchange="formatAndFilterOrders()">
+
+            <label style="margin-left: 10px;" for="toDate">To:</label>
+            <input type="date" id="toDate" onchange="formatAndFilterOrders()">
+
     
             <button onclick="generatePDF()">Download PDF</button> 
             <button onclick="openHistoryPopup()">HISTORY</button> 
@@ -1598,20 +1609,35 @@ function deleteOrder(username, productId, quantity, productName, category, messa
         alert('Failed to delete order.');
     });
 }
+function formatAndFilterOrders() {
+    const fromDate = document.getElementById('fromDate').value; // YYYY-MM-DD
+    const toDate = document.getElementById('toDate').value; // YYYY-MM-DD
 
+    filterOrders(fromDate, toDate);
+}
 
-function filterOrders() {
+function filterOrders(fromDate, toDate) {
     const userValue = document.getElementById('userFilter').value;
     const dateValue = document.getElementById('dateFilter').value;
     const rows = document.querySelectorAll('#ordersTableBody .order-row');
 
     rows.forEach(row => {
-        const matchesUser = userValue === 'all' || row.getAttribute('data-filtername') === userValue;
-        const matchesDate = dateValue === 'all' || row.getAttribute('data-date') === dateValue;
+        const orderDate = row.getAttribute('data-date'); // Order date is already in YYYY-MM-DD
 
-        row.style.display = matchesUser && matchesDate ? '' : 'none';
+        let matchesDateRange = true;
+        if (fromDate && toDate) {
+            matchesDateRange = orderDate >= fromDate && orderDate <= toDate;
+        }
+
+        // Check other filters
+        const matchesUser = userValue === 'all' || row.getAttribute('data-filtername') === userValue;
+        const matchesDate = dateValue === 'all' || orderDate === dateValue;
+
+        row.style.display = matchesUser && matchesDate && matchesDateRange ? '' : 'none';
     });
 }
+
+
 
 function closePopup1(popupId) {
     document.getElementById(popupId).style.display = 'none';
@@ -1820,47 +1846,49 @@ function closePopup1(popupId) {
     
             // Function to handle login
             // Handle Login Popup Display
-        document.addEventListener('DOMContentLoaded', function () {
-        // Safely parse the show_login_popup variable
-        const showLoginPopup = {{ show_login_popup | default(false) | tojson }};
-        if (showLoginPopup) {
-            document.getElementById("loginPopup").style.display = "block";
-        } else {
-            document.getElementById("loginPopup").style.display = "none";
-        }
-    });
-    
-    // Login Function
-    async function login() {
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-        const loginError = document.getElementById("loginError");
-    
-        // Fetch credentials from the server
-        try {
-            const response = await fetch("/validate-login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ username, password })
-            });
-    
-            if (response.ok) {
-                // If login is successful, update the session and reload the page
-                document.getElementById("loginPopup").style.display = "none";
-                document.getElementById("pageContent").classList.remove("hidden");
-                location.reload(); // Reload the page to apply session updates
-            } else {
-                // If login fails, show error message
-                loginError.style.display = "block";
-            }
-        } catch (error) {
-            console.error("Login failed:", error);
-            loginError.style.display = "block";
-            loginError.textContent = "An error occurred. Please try again.";
-        }
+            document.addEventListener("DOMContentLoaded", function () {
+    const showLoginPopup = {{ show_login_popup | default(false) | tojson }};
+    const loginPopup = document.getElementById("loginPopup");
+
+    if (showLoginPopup) {
+        // Show login popup if required
+        loginPopup.style.display = "flex";  
+    } else {
+        // Hide login popup initially
+        loginPopup.style.display = "none";
     }
+});
+
+// Login Function
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const loginError = document.getElementById("loginError");
+
+    try {
+        const response = await fetch("/validate-login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (response.ok) {
+            // If login is successful, update session and reload the page
+            localStorage.setItem("isLoggedIn", "true"); // Store login status
+            document.getElementById("loginPopup").style.display = "none";
+            document.getElementById("pageContent").classList.remove("hidden");
+            location.reload(); 
+        } else {
+            loginError.style.display = "block";
+        }
+    } catch (error) {
+        console.error("Login failed:", error);
+        loginError.style.display = "block";
+        loginError.textContent = "An error occurred. Please try again.";
+    }
+}
         </script>
 </body>
 </html>
