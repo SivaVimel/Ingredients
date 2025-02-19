@@ -619,6 +619,8 @@ def submit_cart():
                     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     with open("data/Orders.txt", "a") as order_file:
                         order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
+                    with open("data/OrderHistory.txt", "a") as order_file:
+                        order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
 
     # Clear the cart after submission
     session.pop('cart', None)
