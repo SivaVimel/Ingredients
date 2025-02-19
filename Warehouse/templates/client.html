@@ -209,8 +209,9 @@
     overflow-y: auto;  /* Enable vertical scrolling */
     padding-right: 10px; /* Adds space to the right of the list for the scrollbar */
 }
+
 #loginPopup {
-    display: flex;
+    display: none; /* Hide by default to prevent flickering */
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -224,24 +225,14 @@
     overflow: hidden;
 }
 
-#matrixCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1; /* Places the canvas behind the login box */
-}
-
 #loginPopup .popup-content {
-    background: rgba(255, 255, 255, 0.85);
-    margin-top:10%;
+    margin-top: 10%;
     padding: 20px;
     border-radius: 10px;
     text-align: center;
     width: 500px;
-    height:500px;
-    z-index: 2; /* Ensure content is above the canvas */
+    height: 500px;
+    z-index: 2;
 }
 
 #loginPopup input {
@@ -436,7 +427,7 @@ window.onload = function() {
 <body>
     <!-- Login Popup -->
     <div id="loginPopup">
-        <canvas id="matrixCanvas"></canvas>
+        
         <center><div class="popup-content">
             <h2 style="color:#45a049;">Welcome to Ingredients</h2>
             <input style="margin-top:70px;" type="text" id="username" placeholder="Username">
@@ -800,54 +791,6 @@ function submitCart() {
     </div>
 
     <script>
-        const canvas = document.getElementById('matrixCanvas');
-const ctx = canvas.getContext('2d');
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const matrixColumns = Math.floor(canvas.width / 20);
-const drops = Array(matrixColumns).fill(1);
-const fontSize = 20;
-const matrixText = "Ingredients";
-
-const bgImage = new Image();
-bgImage.src = "static/bg.png";
-
-function drawMatrix() {
-    // Draw the background image once it has loaded
-    if (bgImage.complete) {
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-    }
-
-    // Set a semi-transparent overlay for added effect (optional)
-    ctx.fillStyle = "rgba(0, 0, 0, 0.29)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Set the font color and size
-    ctx.fillStyle = "#4caf50";
-    ctx.font = `${fontSize}px monospace`;
-
-    // Draw each character
-    for (let i = 0; i < drops.length; i++) {
-        const text = matrixText[Math.floor(Math.random() * matrixText.length)];
-        const x = i * fontSize;
-        const y = drops[i] * fontSize;
-
-        ctx.fillText(text, x, y);
-
-        // Reset the drop position or increment it
-        if (y > canvas.height && Math.random() > 0.95) {
-            drops[i] = 0;
-        }
-        drops[i]++;
-    }
-}
-
-// Ensure the background image is drawn once it loads
-bgImage.onload = () => {
-    setInterval(drawMatrix, 50);
-};
 
 // Handle resizing
 window.addEventListener("resize", () => {
@@ -857,14 +800,16 @@ window.addEventListener("resize", () => {
 });
 
         // Function to handle login
-        // Handle Login Popup Display
-document.addEventListener('DOMContentLoaded', function () {
-    // Safely parse the show_login_popup variable
+        document.addEventListener("DOMContentLoaded", function () {
     const showLoginPopup = {{ show_login_popup | default(false) | tojson }};
+    const loginPopup = document.getElementById("loginPopup");
+
     if (showLoginPopup) {
-        document.getElementById("loginPopup").style.display = "block";
+        // Show login popup if required
+        loginPopup.style.display = "flex";  
     } else {
-        document.getElementById("loginPopup").style.display = "none";
+        // Hide login popup initially
+        loginPopup.style.display = "none";
     }
 });
 
@@ -874,7 +819,6 @@ async function login() {
     const password = document.getElementById("password").value;
     const loginError = document.getElementById("loginError");
 
-    // Fetch credentials from the server
     try {
         const response = await fetch("/validate-login", {
             method: "POST",
@@ -885,12 +829,12 @@ async function login() {
         });
 
         if (response.ok) {
-            // If login is successful, update the session and reload the page
+            // If login is successful, update session and reload the page
+            localStorage.setItem("isLoggedIn", "true"); // Store login status
             document.getElementById("loginPopup").style.display = "none";
             document.getElementById("pageContent").classList.remove("hidden");
-            location.reload(); // Reload the page to apply session updates
+            location.reload(); 
         } else {
-            // If login fails, show error message
             loginError.style.display = "block";
         }
     } catch (error) {
@@ -899,6 +843,7 @@ async function login() {
         loginError.textContent = "An error occurred. Please try again.";
     }
 }
+
     </script>
     <script>
 
