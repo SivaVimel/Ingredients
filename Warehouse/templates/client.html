@@ -299,6 +299,42 @@
 #cart-table th {
     background-color: #333;
 }
+
+nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    font-family: Arial, sans-serif;
+}
+
+nav a {
+    text-decoration: none;
+    background-color: #007bff; /* Primary blue */
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+nav a:hover {
+    background-color: #0056b3; /* Darker blue */
+    transform: scale(1.05);
+}
+
+nav a:active {
+    background-color: #004494; /* Even darker on click */
+    transform: scale(0.98);
+}
+
+nav span {
+    font-size: 16px;
+    font-weight: bold;
+    color: aqua;
+}
+
         </style>     
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>   
