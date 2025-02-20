@@ -1752,9 +1752,41 @@ function closePopup1(popupId) {
                 <button onclick="closeModal()" class="close-button">&times; Close</button>
                 <h2>Add Product</h2>
                 <form method="POST" action="/007PageLoginAdminThe007" enctype="multipart/form-data" class="form-container">
-                    <label>Product Name: <input type="text" name="name" required></label>
-                    <label>Category: <input type="text" name="category" required></label>
-                    <label>Supplier: <input type="text" name="supplier" required></label>
+                    <!-- Product Name -->
+<label for="product-name">Product Name:</label>
+<input list="product-list" name="name" id="product-name" required>
+<datalist id="product-list">
+    {% for category, items in products.items() %}
+        {% for product in items %}
+            <option value="{{ product[1] }}"></option>  <!-- Product Name from products.txt -->
+        {% endfor %}
+    {% endfor %}
+</datalist>
+
+<!-- Category -->
+<label for="category">Category:</label>
+<input list="category-list" name="category" id="category" required>
+<datalist id="category-list">
+    {% for category in products.keys() %}
+        <option value="{{ category }}"></option>  <!-- Existing Categories -->
+    {% endfor %}
+</datalist>
+
+<!-- Supplier -->
+<label for="supplier">Supplier:</label>
+<input list="supplier-list" name="supplier" id="supplier" required>
+<datalist id="supplier-list">
+    {% set unique_suppliers = [] %}
+    {% for category, items in products.items() %}
+        {% for product in items %}
+            {% if product[7] not in unique_suppliers %}
+                <option value="{{ product[7] }}"></option>  <!-- Unique Suppliers -->
+                {% set _ = unique_suppliers.append(product[7]) %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+</datalist>
+
                     <label>Cost Price: <input type="number" name="cost_price" step="0.01" required></label>
                     <label>Selling Price: <input type="number" name="selling_price" step="0.01" required></label>
                     <label>Quantity: <input type="number" name="quantity" required></label>
