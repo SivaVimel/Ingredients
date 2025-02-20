@@ -248,6 +248,38 @@ def index():
     all_categories = list(products.keys())  # Get all category names
     total_pages = (len(all_categories) + categories_per_page - 1) // categories_per_page  # Calculate total pages
 
+    # Handle Product Addition
+    if request.method == 'POST':
+        name = request.form['name']
+        category = request.form['category']
+        cost_price = request.form['cost_price']
+        selling_price = request.form['selling_price']
+        quantity = request.form['quantity']
+        supplier = request.form['supplier']
+        expiry = request.form['expiry']
+
+        product_id = sum(len(items) for items in products.values()) + 1
+
+        # Image handling
+        file = request.files['image']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            image_path = os.path.join(app.config['IMAGE_FOLDER'], filename)
+            file.save(image_path)
+        else:
+            filename = None
+
+        product = [product_id, name, category, cost_price, selling_price, quantity, filename, supplier, expiry]
+
+        if category not in products:
+            products[category] = []
+        products[category].append(product)
+
+        save_products(products)
+
+        # **Redirect to the last page**
+        return redirect(url_for('index', page=total_pages))
+
     # Get current page number (default to 1)
     page = request.args.get("page", default=1, type=int)
 
