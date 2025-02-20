@@ -241,7 +241,12 @@ def index():
 
     # Sort products within each category
     for category, items in products.items():
-        products[category] = sorted(items, key=lambda x: (int(x[5]) == 0, int(x[5])))
+        try:
+            # Sort products within each category, converting price values to float
+            for category, items in products.items():
+                products[category] = sorted(items, key=lambda x: (float(x[5]) == 0, float(x[5])))
+        except ValueError as e:
+            print(f"ValueError: {e} while sorting products in category {category}")
 
     # Pagination logic
     categories_per_page = 5  # Show 5 categories per page
@@ -331,7 +336,12 @@ def client():
 
     # Sort products
     for category, items in products.items():
-        products[category] = sorted(items, key=lambda x: (int(x[5]) == 0, int(x[5])))
+        try:
+            # Sort products within each category, converting price values to float
+            for category, items in products.items():
+                products[category] = sorted(items, key=lambda x: (float(x[5]) == 0, float(x[5])))
+        except ValueError as e:
+            print(f"ValueError: {e} while sorting products in category {category}")
 
     # Pagination Logic
     all_categories = list(products.keys())
