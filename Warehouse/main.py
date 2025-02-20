@@ -135,26 +135,30 @@ def get_orders_data():
     return jsonify(get_top_clients())
 
 
+CATEGORIES_PER_PAGE = 5  # Show 5 categories per page
+
 
 def load_products():
     """Load products from PRODUCTS_FILE, return as a dictionary, removing empty categories."""
     if os.path.exists(PRODUCTS_FILE):
-        # Check if the file is empty
         if os.path.getsize(PRODUCTS_FILE) == 0:
-            return {}  # Return an empty dictionary if the file is empty
+            return {}  # Return empty dictionary if file is empty
         try:
             with open(PRODUCTS_FILE, 'r') as f:
-                products = json.load(f)  # Attempt to load the JSON data
-            
-            # Remove empty categories (categories with empty lists)
-            products = {category: items for category, items in products.items() if items}
-
-            return products
+                products = json.load(f)
+            return {category: items for category, items in products.items() if items}
         except json.JSONDecodeError:
-            # Handle JSON decoding errors (e.g., if the file is corrupted)
             print("Error: JSON file is corrupted. Returning an empty product list.")
             return {}
     return {}
+
+
+def get_product_counts():
+    """Ensure this function returns total product count and a dictionary of category counts."""
+    products = load_products()
+    total_products = sum(len(items) for items in products.values())  # Count total products
+    category_counts = {category: len(items) for category, items in products.items()}
+    return total_products, category_counts
 
 
 def save_products(products):
@@ -228,66 +232,59 @@ def get_product_counts():
 
     return total_products, category_counts
 
-
 @app.route('/007PageLoginAdminThe007', methods=['GET', 'POST'])
 def index():
     products = load_products()
-    username = session.get("username")  # Retrieve the username from the session
-
-    # Determine whether to show the login popup
+    username = session.get("username")
     show_login_popup = username is None
-    
-    # Get total products and category counts
     total_products, category_counts = get_product_counts()
 
+    # Sort products within each category
     for category, items in products.items():
         products[category] = sorted(items, key=lambda x: (int(x[5]) == 0, int(x[5])))
 
+    # Pagination logic
+    categories_per_page = 5  # Show 5 categories per page
+    all_categories = list(products.keys())  # Get all category names
+    total_pages = (len(all_categories) + categories_per_page - 1) // categories_per_page  # Calculate total pages
 
-    if request.method == 'POST':
-        # Get form data
-        name = request.form['name']
-        category = request.form['category']
-        cost_price = request.form['cost_price']
-        selling_price = request.form['selling_price']
-        quantity = request.form['quantity']
-        supplier = request.form['supplier']
-        expiry = request.form['expiry']
+    # Get current page number (default to 1)
+    page = request.args.get("page", default=1, type=int)
 
-        # Auto-generate an ID based on total number of items
-        product_id = sum(len(items) for items in products.values()) + 1
+    # Ensure page is within valid range
+    if page < 1:
+        page = 1
+    elif page > total_pages:
+        page = total_pages
 
-        # Handle file upload
-        file = request.files['image']
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            image_path = os.path.join(app.config['IMAGE_FOLDER'], filename)
-            file.save(image_path)
-        else:
-            filename = None  # No image uploaded
+    # Slice the categories for the current page
+    start_index = (page - 1) * categories_per_page
+    end_index = start_index + categories_per_page
+    paginated_categories = all_categories[start_index:end_index]
 
-        # Create product entry
-        product = [product_id, name, category, cost_price, selling_price, quantity, filename, supplier, expiry]
+    # Create a new dictionary with only paginated categories
+    paginated_products = {category: products[category] for category in paginated_categories}
 
-        # Add product to the appropriate category in the dictionary
-        if category not in products:
-            products[category] = []
-        products[category].append(product)
+    # Ensure `top_clients` is always a list
+    top_clients = get_top_clients() or []
 
-        # Save updated products to file
-        save_products(products)
+    return render_template(
+        'index.html',
+        top_clients=top_clients,
+        products=paginated_products,  # Only send the paginated categories
+        total_products=total_products,
+        category_counts=category_counts,
+        username=username,
+        show_login_popup=show_login_popup,
+        page=page,
+        total_pages=total_pages  # Send total pages for navigation
+    )
 
-        return redirect(url_for('index'))
-    top_clients = get_top_clients()
-
-    return render_template('index.html', top_clients=top_clients, products=products, total_products=total_products, category_counts=category_counts, username=username, show_login_popup=show_login_popup)
 
 @app.route('/client')
 def client():
     products = load_products()
     username = session.get("username")  # Retrieve the username from the session
-
-    # Determine whether to show the login popup
     show_login_popup = username is None
 
     # Load order history
@@ -300,15 +297,31 @@ def client():
     # Filter orders for the logged-in user
     user_orders = [order for order in orders if order[0][22::] == username] if username else []
 
+    # Sort products
     for category, items in products.items():
         products[category] = sorted(items, key=lambda x: (int(x[5]) == 0, int(x[5])))
 
+    # Pagination Logic
+    all_categories = list(products.keys())
+    categories_per_page = 5
+    page = request.args.get("page", default=1, type=int)
+
+    start_index = (page - 1) * categories_per_page
+    end_index = start_index + categories_per_page
+    paginated_categories = all_categories[start_index:end_index]
+
+    paginated_products = {cat: products[cat] for cat in paginated_categories}
+
+    total_pages = (len(all_categories) + categories_per_page - 1) // categories_per_page
+
     return render_template(
         "client.html",
-        products=products,
+        products=paginated_products,
         user_orders=user_orders,
         username=username,
-        show_login_popup=show_login_popup
+        show_login_popup=show_login_popup,
+        page=page,
+        total_pages=total_pages
     )
 
 @app.route('/chat1', methods=['POST'])
