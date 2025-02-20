@@ -1765,60 +1765,77 @@ function closePopup1(popupId) {
                 <button class="delete-button" onclick="deleteProduct()">Delete Product</button>
             </div>
         </div>
+<!-- Product Categories and Tables -->
+<div id="categories">
+    {% for category, items in products.items() %}
+        <div class="category-section" id="category-{{ category }}">
+            <h2 class="prod-headings" onclick="toggleTableVisibility('table-{{ category }}')">{{ category }}</h2>
 
-    <!-- Product Categories and Tables -->
-    <div id="categories">
-        {% for category, items in products.items() %}
-            <div class="category-section" id="category-{{ category }}">
-                <!-- Clickable Heading -->
-                <h2 class="prod-headings" onclick="toggleTableVisibility('table-{{ category }}')">{{ category }}</h2>
-            
-                <!-- Table of Products (Initially Visible) -->
-                <div id="table-{{ category }}" class="product-table">
-                    <table class="table">
-                        <thead>
+            <div id="table-{{ category }}" class="product-table">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Supplier</th>
+                            <th>Cost Price</th>
+                            <th>Selling Price</th>
+                            <th>Quantity</th>
+                            <th>Expiry</th>
+                            <th>Image</th>
+                            <th>Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in items %}
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Category</th>
-                                <th>Supplier</th>
-                                <th>Cost Price</th>
-                                <th>Selling Price</th>
-                                <th>Quantity</th>
-                                <th>Expiry</th>
-                                <th>Image</th>
-                                <th>Edit</th>
+                                <td>{{ product[0] }}</td>
+                                <td>{{ product[1] }}</td>
+                                <td>{{ product[2] }}</td>
+                                <td>{{ product[7] }}</td>
+                                <td>{{ product[3] }}</td>
+                                <td>{{ product[4] }}</td>
+                                <td>{{ product[5] }}</td>
+                                <td>{{ product[8] }}</td>
+                                <td>
+                                    {% if product[6] %}
+                                        <img src="{{ url_for('uploaded_file', filename=product[6]) }}" alt="Image"
+                                             class="aspect-ratio-9-16"
+                                             onclick="showPopup('{{ url_for('uploaded_file', filename=product[6]) }}')">
+                                    {% else %}
+                                        No Image
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" class="edit-button" style="font-size:large;"
+                                            onclick="openEditModal('{{ product[0] }}', '{{ product[1] }}', '{{ product[2] }}', 
+                                            '{{ product[3] }}', '{{ product[4] }}', '{{ product[5] }}', '{{ product[7] }}', '{{ product[8] }}')">
+                                        📝
+                                    </button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% for product in items %}
-                                <tr>
-                                    <td>{{ product[0] }}</td>
-                                    <td>{{ product[1] }}</td>
-                                    <td>{{ product[2] }}</td>
-                                    <td>{{ product[7] }}</td> <!-- Supplier -->
-                                    <td>{{ product[3] }}</td>
-                                    <td>{{ product[4] }}</td>
-                                    <td>{{ product[5] }}</td>
-                                    <td>{{ product[8] }}</td> <!--Expiry-->
-                                    <td>
-                                        {% if product[6] %}
-                                        <img src="{{ url_for('uploaded_file', filename=product[6]) }}" alt="Image" class="aspect-ratio-9-16"onclick="showPopup('{{ url_for('uploaded_file', filename=product[6]) }}')">
-                                        {% else %}
-                                            No Image
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <button type="button" class="edit-button" style="font-size:large;" onclick="openEditModal('{{ product[0] }}', '{{ product[1] }}', '{{ product[2] }}', '{{ product[3] }}', '{{ product[4] }}', '{{ product[5] }}', '{{ product[7] }}', '{{ product[8] }}')">📝</button>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>    
-        {% endfor %}
-    </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+<nav>
+    {% if page > 1 %}
+        <a href="{{ url_for('index', page=page-1) }}">Previous</a>
+    {% endif %}
+    
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    
+    {% if page < total_pages %}
+        <a href="{{ url_for('index', page=page+1) }}">Next</a>
+    {% endif %}
+</nav>
+
 
     <!-- JavaScript to Filter and Show/Hide Categories -->
     <script>
