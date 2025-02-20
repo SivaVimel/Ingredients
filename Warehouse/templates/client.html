@@ -563,6 +563,7 @@ window.onload = function() {
 
     <!-- Product Categories and Tables -->
     <!-- Product Categories and Tables -->
+<!-- Product Categories and Tables -->
 <div id="categories">
     {% for category, items in products.items() %}
         <div class="category-section" id="category-{{ category }}">
@@ -599,14 +600,13 @@ window.onload = function() {
                                 <td>{{ product[8] }}</td> <!--Expiry-->
                                 <td>
                                     {% if product[6] %}
-                                    <img src="{{ url_for('uploaded_file', filename=product[6]) }}" alt="Image" class="aspect-ratio-9-16"onclick="showPopup('{{ url_for('uploaded_file', filename=product[6]) }}')">
+                                        <img src="{{ url_for('uploaded_file', filename=product[6]) }}" alt="Image" class="aspect-ratio-9-16" onclick="showPopup('{{ url_for('uploaded_file', filename=product[6]) }}')">
                                     {% else %}
                                         No Image
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if product[5] | int > 0 %}
-                                        <!-- Quantity and Message Input Fields -->
                                         <input 
                                         style="width: 60px;
                                         padding: 6px;
@@ -618,7 +618,7 @@ window.onload = function() {
                                         background-color: #252525;"
                                         type="number" id="quantity-{{ product[0] }}" placeholder="Qty" min="1" max="{{ product[5] }}" required>
                                         <input 
-                                        style=" width: 150px;
+                                        style="width: 150px;
                                         padding: 6px;
                                         border: 2px solid #ccc;
                                         border-radius: 5px;
@@ -637,6 +637,18 @@ window.onload = function() {
         </div>    
     {% endfor %}
 </div>
+
+<!-- Pagination Controls -->
+<nav class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('client', page=page-1) }}" class="pagination-btn">Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+        <a href="{{ url_for('client', page=page+1) }}" class="pagination-btn">Next</a>
+    {% endif %}
+</nav>
+
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
