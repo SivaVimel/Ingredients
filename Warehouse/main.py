@@ -138,6 +138,38 @@ def get_orders_data():
 CATEGORIES_PER_PAGE = 5  # Show 5 categories per page
 
 
+@app.route('/get_categories')
+def get_categories():
+    products = load_products()
+    categories = list(products.keys())  # Get all category names
+    return jsonify({"categories": categories})
+
+
+
+# ✅ Function to read product categories from file safely
+def get_product_categories():
+    try:
+        with open("data/Products.txt", "r", encoding="utf-8") as file:
+            products = json.load(file)  # ✅ Use json.load() instead of eval()
+            return list(products.keys())  # ✅ Extract only category names
+    except json.JSONDecodeError as e:
+        print("Error reading product file (JSON issue):", e)
+    except Exception as e:
+        print("General error reading product file:", e)
+
+    return []  # Return an empty list if there's an error
+
+# ✅ API Endpoint to fetch matching categories
+@app.route('/get_categories2')
+def get_categories2():
+    query = request.args.get("query", "").strip().lower()
+    categories = get_product_categories()
+
+    # ✅ Filter categories dynamically
+    filtered_categories = [category for category in categories if category.lower().startswith(query)] if query else categories
+
+    return jsonify(filtered_categories)
+
 def load_products():
     """Load products from PRODUCTS_FILE, return as a dictionary, removing empty categories."""
     if os.path.exists(PRODUCTS_FILE):
@@ -281,7 +313,7 @@ def index():
     if request.method == 'POST':
         # Strip spaces at the beginning and end for name, category, and supplier
         name = request.form['name'].strip() if request.form['name'] else ''
-        category = request.form['category'].strip() if request.form['category'] else ''
+        category = request.form['category2'].strip() if request.form['category2'] else ''
         supplier = request.form['supplier'].strip() if request.form['supplier'] else ''
     
         # Ensure cost price, selling price, and quantity have proper fallback values
@@ -600,11 +632,6 @@ def get_report_data():
 
 from collections import Counter
 
-@app.route('/get_categories')
-def get_categories():
-    products = load_products()
-    categories = list(products.keys())  # Get all category names
-    return jsonify({"categories": categories})
 
 @app.route('/get_chart_data')
 def get_chart_data():
