@@ -401,15 +401,6 @@ function updateProductCount() {
 // Call the function to update the count
 updateProductCount();
         // Function to toggle the visibility of the product table
-function toggleTableVisibility(tableId) {
-    var table = document.getElementById(tableId);
-    // If the table is currently visible, hide it; if hidden, show it
-    if (table.style.display === "none") {
-        table.style.display = "block";  // Show the table
-    } else {
-        table.style.display = "none";  // Hide the table
-    }
-}
 
 // Ensure that all tables are visible when the page loads
 window.onload = function() {
@@ -599,92 +590,130 @@ window.onload = function() {
 
     <!-- Product Categories and Tables -->
     <!-- Product Categories and Tables -->
-<!-- Product Categories and Tables -->
-<div id="categories">
-    {% for category, items in products.items() %}
-        <div class="category-section" id="category-{{ category }}">
-            <h2 class="prod-headings" onclick="toggleTableVisibility('table-{{ category }}')">{{ category }}</h2>
-        
-            <div id="table-{{ category }}" class="product-table">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Selling Price</th>
-                            <th>Quantity</th>
-                            <th>Expiry</th>
-                            <th>Image</th>
-                            <th>Order</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for product in items %}
-                            <tr id="product-{{ product[0] }}">
-                                <td>{{ product[0] }}</td>
-                                <td>{{ product[1] }}</td>
-                                <td>{{ product[2] }}</td>
-                                <td>{{ product[4] }}</td>
-                                <td>
-                                    {% if product[5] | int == 0 %}
-                                        <button type="button" class="notify-button" style="font-size:large; background-color: #f44336; color: #fff;" onclick="sendNotifyRequest('{{ product[0] }}', '{{ product[1] }}', '{{ product[2] }}')">Notify</button>
-                                    {% else %}
-                                        {{ product[5] }}
-                                    {% endif %}
-                                </td>
-                                <td>{{ product[8] }}</td> <!--Expiry-->
-                                <td>
-                                    {% if product[6] %}
-                                        <img src="{{ url_for('uploaded_file', filename=product[6]) }}" alt="Image" class="aspect-ratio-9-16" onclick="showPopup('{{ url_for('uploaded_file', filename=product[6]) }}')">
-                                    {% else %}
-                                        No Image
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if product[5] | int > 0 %}
-                                        <input 
-                                        style="width: 60px;
+    <div id="categories"></div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading-text" style="display: none;">Loading more products...</div>
+    
+    <script>
+        let start = 0;
+        const limit = 5; // Load 5 categories at a time
+        let loading = false;
+        let allLoaded = false; // Stop fetching if no more products
+    
+        async function loadMoreProducts() {
+            if (loading || allLoaded) return;
+            loading = true;
+            document.getElementById("loading").style.display = "block";
+    
+            let response = await fetch(`/client?load_more=true&start=${start}`);
+            let data = await response.json();
+    
+            let newProducts = data.products;
+            if (Object.keys(newProducts).length === 0) {
+                allLoaded = true; // Stop fetching if no more products
+                document.getElementById("loading").innerText = "No more products.";
+                return;
+            }
+    
+            renderProducts(newProducts);
+            start += limit;
+            loading = false;
+            document.getElementById("loading").style.display = "none";
+    
+            if (!data.has_more) {
+                allLoaded = true; // No more products left to load
+                document.getElementById("loading").innerText = "No more products.";
+            }
+        }
+    
+        function renderProducts(products) {
+            let container = document.getElementById("categories");
+            for (let category in products) {
+                let categoryDiv = document.createElement("div");
+                categoryDiv.className = "category-section";
+                categoryDiv.id = `category-${category}`;
+                categoryDiv.innerHTML = `
+                    <h2 class="prod-headings" onclick="toggleTableVisibility('table-${category}')">${category}</h2>
+                    <div class="product-table">
+                        <table id="table-${category}" class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Selling Price</th>
+                                    <th>Quantity</th>
+                                    <th>Expiry</th>
+                                    <th>Image</th>
+                                    <th>Order</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${products[category].map(product => `
+                                    <tr id="product-${product[0]}">
+                                        <td>${product[0]}</td>
+                                        <td>${product[1]}</td>
+                                        <td>${product[2]}</td>
+                                        <td>${product[4]}</td>
+                                        <td>
+                                            ${product[5] == 0 
+                                                ? `<button type="button" class="notify-button" style="font-size:large; background-color: #f44336; color: #fff;" onclick="sendNotifyRequest('${product[0]}', '${product[1]}', '${product[2]}')">Notify</button>`
+                                                : product[5]}
+                                        </td>
+                                        <td>${product[8]}</td> 
+                                        <td>
+                                            ${product[6] 
+                                                ? `<img src="/uploads/${product[6]}" class="aspect-ratio-9-16" onclick="showPopup('/uploads/${product[6]}')">`
+                                                : "No Image"}
+                                        </td>
+                                        <td>
+                                            ${product[5] > 0 
+                                                ? `<input type="number" style="width: 60px;
                                         padding: 6px;
                                         border: 2px solid #ccc;
                                         border-radius: 5px;
                                         font-size: 14px;
                                         text-align: center;
                                         color: white;
-                                        background-color: #252525;"
-                                        type="number" id="quantity-{{ product[0] }}" placeholder="Qty" min="1" max="{{ product[5] }}" required>
-                                        <input 
-                                        style="width: 150px;
+                                        background-color: #252525;" id="quantity-${product[0]}" placeholder="Qty" min="1" max="${product[5]}" required>
+                                                    <input type="text" style="width: 150px;
                                         padding: 6px;
                                         border: 2px solid #ccc;
                                         border-radius: 5px;
                                         font-size: 14px;
                                         color: white;
-                                        background-color: #252525;"
-                                        type="text" id="message-{{ product[0] }}" placeholder="Message (Optional)">
-                                        <button type="button" class="order-button" style="font-size:large; background-color: #4CAF50; color: #fff;" onclick="placeOrder('{{ product[0] }}')">Order</button>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>    
-    {% endfor %}
-</div>
-
-<!-- Pagination Controls -->
-<nav class="pagination">
-    {% if page > 1 %}
-        <a href="{{ url_for('client', page=page-1) }}" class="pagination-btn">Previous</a>
-    {% endif %}
-    <span>Page {{ page }} of {{ total_pages }}</span>
-    {% if page < total_pages %}
-        <a href="{{ url_for('client', page=page+1) }}" class="pagination-btn">Next</a>
-    {% endif %}
-</nav>
-
+                                        background-color: #252525;" id="message-${product[0]}" placeholder="Message (Optional)">
+                                                    <button type="button" class="order-button" onclick="placeOrder('${product[0]}')">Order</button>`
+                                                : ""}
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(categoryDiv);
+            }
+        }
+    
+        function toggleTableVisibility(tableId) {
+            let table = document.getElementById(tableId);
+            if (table) {
+                table.style.display = table.style.display === "none" ? "table" : "none";
+            }
+        }
+    
+        window.addEventListener("scroll", function () {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+                loadMoreProducts();
+            }
+        });
+    
+        // Load initial categories on page load
+        window.onload = loadMoreProducts;
+    </script>
+    
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -826,11 +855,6 @@ function submitCart() {
             });
         }
     
-        // Function to toggle table visibility
-        function toggleTableVisibility(tableId) {
-            const table = document.getElementById(tableId);
-            table.style.display = (table.style.display === 'none' || table.style.display === '') ? 'block' : 'none';
-        }
     </script>
         <div id="imagePopup" class="popup">
             <span class="close-button" onclick="closePopup()">&times;</span>
