@@ -574,40 +574,17 @@ canvas {
     object-fit: cover;
 }
 
-nav {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-top: 20px;
-    font-family: Arial, sans-serif;
-}
-
-nav a {
-    text-decoration: none;
-    background-color: #007bff; /* Primary blue */
-    color: white;
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 16px;
-    transition: background-color 0.3s, transform 0.2s;
-}
-
-nav a:hover {
-    background-color: #0056b3; /* Darker blue */
-    transform: scale(1.05);
-}
-
-nav a:active {
-    background-color: #004494; /* Even darker on click */
-    transform: scale(0.98);
-}
-
-nav span {
-    font-size: 16px;
-    font-weight: bold;
-    color: #0056b3;
-}
+        .aspect-ratio-9-1669 {
+            width: 50px;
+            height: auto;
+            cursor: pointer;
+        }
+        .loading-text69 {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px;
+        }
 
 
         </style>     
@@ -659,17 +636,27 @@ nav span {
             document.getElementById("productModal2").style.display = "none";
         }
 
-        function openEditModal(id, name, category, costPrice, sellingPrice, quantity, supplier, expiry) {
-            document.getElementById("editModal").style.display = "flex";
-            document.getElementById("edit-id").value = id;
-            document.getElementById("edit-name").value = name;
-            document.getElementById("edit-category").value = category;
-            document.getElementById("edit-cost-price").value = costPrice;
-            document.getElementById("edit-selling-price").value = sellingPrice;
-            document.getElementById("edit-quantity").value = quantity;
-            document.getElementById("edit-supplier").value = supplier;
-            document.getElementById("edit-expiry").value = expiry;
-        }
+        function openEditModal(id, name, category, costPrice, sellingPrice, quantity, supplier, expiry, image) {
+    document.getElementById("editModal").style.display = "flex";
+    document.getElementById("edit-id").value = id;
+    document.getElementById("edit-name").value = name;
+    document.getElementById("edit-category").value = category;
+    document.getElementById("edit-cost-price").value = costPrice;
+    document.getElementById("edit-selling-price").value = sellingPrice;
+    document.getElementById("edit-quantity").value = quantity;
+    document.getElementById("edit-supplier").value = supplier;
+    document.getElementById("edit-expiry").value = expiry;
+
+    // Set current image preview
+    let imagePreview = document.getElementById("edit-image-preview");
+    if (image) {
+        imagePreview.src = `/uploads/${image}`;
+        imagePreview.style.display = "block";
+    } else {
+        imagePreview.style.display = "none";
+    }
+}
+
 
         function closeEditModal() {
             document.getElementById("editModal").style.display = "none";
@@ -701,15 +688,7 @@ function updateProductCount() {
 // Call the function to update the count
 updateProductCount();
         // Function to toggle the visibility of the product table
-function toggleTableVisibility(tableId) {
-    var table = document.getElementById(tableId);
-    // If the table is currently visible, hide it; if hidden, show it
-    if (table.style.display === "none") {
-        table.style.display = "block";  // Show the table
-    } else {
-        table.style.display = "none";  // Hide the table
-    }
-}
+
 
 // Ensure that all tables are visible when the page loads
 window.onload = function() {
@@ -1753,8 +1732,9 @@ function closePopup1(popupId) {
                 <h2>Add Product</h2>
                 <form method="POST" action="/007PageLoginAdminThe007" enctype="multipart/form-data" class="form-container">
                     <!-- Product Name -->
+<!-- Product Name -->
 <label for="product-name">Product Name:</label>
-<input list="product-list" name="name" id="product-name" required>
+<input list="product-list" name="name" id="product-name" required oninput="cleanInput(this)">
 <datalist id="product-list">
     {% for category, items in products.items() %}
         {% for product in items %}
@@ -1765,7 +1745,7 @@ function closePopup1(popupId) {
 
 <!-- Category -->
 <label for="category">Category:</label>
-<input list="category-list" name="category" id="category" required>
+<input list="category-list" name="category" id="category" required oninput="cleanInput(this)">
 <datalist id="category-list">
     {% for category in products.keys() %}
         <option value="{{ category }}"></option>  <!-- Existing Categories -->
@@ -1774,7 +1754,7 @@ function closePopup1(popupId) {
 
 <!-- Supplier -->
 <label for="supplier">Supplier:</label>
-<input list="supplier-list" name="supplier" id="supplier" required>
+<input list="supplier-list" name="supplier" id="supplier" required oninput="cleanInput(this)">
 <datalist id="supplier-list">
     {% set unique_suppliers = [] %}
     {% for category, items in products.items() %}
@@ -1786,11 +1766,10 @@ function closePopup1(popupId) {
         {% endfor %}
     {% endfor %}
 </datalist>
-
                     <label>Cost Price: <input type="number" name="cost_price" step="0.01" required></label>
                     <label>Selling Price: <input type="number" name="selling_price" step="0.01" required></label>
                     <label>Quantity: <input type="number" name="quantity" required></label>
-                    <label>Expiry: <input type="text" name="expiry" required></label>
+                    <label>Expiry: <input type="text" name="expiry" required oninput="cleanInput(this)"></label>
                     <div class="form-group">
                         <label for="image">Product Image</label>
                         <input type="file" name="image" id="image" class="form-control" accept="image/*">
@@ -1799,6 +1778,15 @@ function closePopup1(popupId) {
                 </form>            
             </div>
         </div>
+        <script>
+            function cleanInput(input) {
+                // Remove leading/trailing spaces
+                input.value = input.value.trim();
+                
+                // Remove double spaces and replace with a single space
+                input.value = input.value.replace(/\s{2,}/g, ' ');
+            }
+        </script>
 
         <div id="productModal2" class="modal">
             <div class="modal-content">
@@ -1819,7 +1807,7 @@ function closePopup1(popupId) {
             <div class="modal-content">
                 <button onclick="closeEditModal()" class="close-button">&times; Close</button>
                 <h2>Edit Product</h2>
-                <form method="POST" action="/edit" class="form-container">
+                <form method="POST" action="/edit" enctype="multipart/form-data" class="form-container">
                     <input type="hidden" name="id" id="edit-id">
                     <label>Product Name: <input type="text" name="name" id="edit-name" required></label>
                     <label>Category: <input type="text" name="category" id="edit-category" required></label>
@@ -1828,82 +1816,127 @@ function closePopup1(popupId) {
                     <label>Selling Price: <input step="0.01" type="number" name="selling_price" id="edit-selling-price" required></label>
                     <label>Quantity: <input type="number" name="quantity" id="edit-quantity" required></label>
                     <label>Expiry: <input type="text" name="expiry" id="edit-expiry" required></label>
+        
+                    <!-- Image Preview -->
+                    <div class="form-group">
+                        <label for="edit-image">Product Image</label>
+                        <img id="edit-image-preview" src="" alt="Current Image" class="edit-image-preview">
+                        <input type="file" name="image" id="edit-image" class="form-control" accept="image/*">
+                    </div>
+        
                     <button type="submit" class="add-button">Save Changes</button>
                 </form>
                 <button class="delete-button" onclick="deleteProduct()">Delete Product</button>
             </div>
         </div>
 <!-- Product Categories and Tables -->
-<div id="categories">
-    {% for category, items in products.items() %}
-        <div class="category-section" id="category-{{ category }}">
-            <h2 class="prod-headings" onclick="toggleTableVisibility('table-{{ category }}')">{{ category }}</h2>
+<div id="categories69"></div>
 
-            <div id="table-{{ category }}" class="product-table">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Supplier</th>
-                            <th>Cost Price</th>
-                            <th>Selling Price</th>
-                            <th>Quantity</th>
-                            <th>Expiry</th>
-                            <th>Image</th>
-                            <th>Edit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for product in items %}
-                            <tr>
-                                <td>{{ product[0] }}</td>
-                                <td>{{ product[1] }}</td>
-                                <td>{{ product[2] }}</td>
-                                <td>{{ product[7] }}</td>
-                                <td>{{ product[3] }}</td>
-                                <td>{{ product[4] }}</td>
-                                <td>{{ product[5] }}</td>
-                                <td>{{ product[8] }}</td>
-                                <td>
-                                    {% if product[6] %}
-                                        <img src="{{ url_for('uploaded_file', filename=product[6]) }}" alt="Image"
-                                             class="aspect-ratio-9-16"
-                                             onclick="showPopup('{{ url_for('uploaded_file', filename=product[6]) }}')">
-                                    {% else %}
-                                        No Image
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button type="button" class="edit-button" style="font-size:large;"
-                                            onclick="openEditModal('{{ product[0] }}', '{{ product[1] }}', '{{ product[2] }}', 
-                                            '{{ product[3] }}', '{{ product[4] }}', '{{ product[5] }}', '{{ product[7] }}', '{{ product[8] }}')">
-                                        📝
-                                    </button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    {% endfor %}
-</div>
+    <!-- Loading Indicator -->
+    <div id="loading69" class="loading-text69" style="display: none;">Loading more products...</div>
 
-<!-- Pagination Controls -->
-<nav>
-    {% if page > 1 %}
-        <a href="{{ url_for('index', page=page-1) }}">Previous</a>
-    {% endif %}
+    <script>
+        let start = 0;
+        const limit = 5;
+        let loading = false;
+        let allLoaded = false; // Stop fetching if no more products
     
-    <span>Page {{ page }} of {{ total_pages }}</span>
+        async function loadMoreProducts69() {
+            if (loading || allLoaded) return;
+            loading = true;
+            document.getElementById("loading69").style.display = "block";
     
-    {% if page < total_pages %}
-        <a href="{{ url_for('index', page=page+1) }}">Next</a>
-    {% endif %}
-</nav>
-
+            let response = await fetch(`/007PageLoginAdminThe007?load_more=true&start=${start}`);
+            let data = await response.json();
+    
+            let newProducts = data.products;
+            if (Object.keys(newProducts).length === 0) {
+                allLoaded = true; // Stop fetching if no more products
+                document.getElementById("loading69").innerText = "No more products.";
+                return;
+            }
+    
+            renderProducts69(newProducts);
+            start += limit;
+            loading = false;
+            document.getElementById("loading69").style.display = "none";
+    
+            if (!data.has_more) {
+                allLoaded = true; // No more products left to load
+                document.getElementById("loading69").innerText = "No more products.";
+            }
+        }
+    
+        function renderProducts69(products) {
+            let container = document.getElementById("categories69");
+            for (let category in products) {
+                let categoryDiv = document.createElement("div");
+                categoryDiv.className = "category-section69";
+                categoryDiv.id = `category-${category}`;
+                categoryDiv.innerHTML = `
+                    <h2 class="prod-headings" onclick="toggleTableVisibility('table-${category}')">${category}</h2>
+                    <div class="product-table">
+                        <table id="table-${category}" class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Supplier</th>
+                                    <th>Cost Price</th>
+                                    <th>Selling Price</th>
+                                    <th>Quantity</th>
+                                    <th>Expiry</th>
+                                    <th>Image</th>
+                                    <th>Edit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${products[category].map(product => `
+                                    <tr>
+                                        <td>${product[0]}</td>
+                                        <td>${product[1]}</td>
+                                        <td>${product[2]}</td>
+                                        <td>${product[7]}</td>
+                                        <td>${product[3]}</td>
+                                        <td>${product[4]}</td>
+                                        <td>${product[5]}</td>
+                                        <td>${product[8]}</td>
+                                        <td>
+                                            ${product[6] ? `<img src="/uploads/${product[6]}" class="aspect-ratio-9-1669" onclick="showPopup('/uploads/${product[6]}')">` : "No Image"}
+                                        </td>
+                                        <td>
+                                            <button type="button" class="edit-button" onclick="openEditModal('${product[0]}', '${product[1]}', '${product[2]}', '${product[3]}', '${product[4]}', '${product[5]}', '${product[7]}', '${product[8]}')">
+                                                📝
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(categoryDiv);
+            }
+        }
+    
+        function toggleTableVisibility(tableId) {
+            let table = document.getElementById(tableId);
+            if (table) {
+                table.style.display = table.style.display === "none" ? "table" : "none";
+            }
+        }
+    
+        window.addEventListener("scroll", function () {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+                loadMoreProducts69();
+            }
+        });
+    
+        // Load initial categories on page load
+        window.onload = loadMoreProducts69;
+    </script>    
+    
 
     <!-- JavaScript to Filter and Show/Hide Categories -->
     <script>
@@ -1923,11 +1956,7 @@ function closePopup1(popupId) {
             });
         }
 
-        // Function to toggle table visibility
-        function toggleTableVisibility(tableId) {
-            const table = document.getElementById(tableId);
-            table.style.display = (table.style.display === 'none' || table.style.display === '') ? 'block' : 'none';
-        }
+        
     </script>
         <div id="imagePopup" class="popup">
             <span class="close-button" onclick="closePopup2()">&times;</span>
