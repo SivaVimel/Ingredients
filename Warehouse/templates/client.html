@@ -427,15 +427,20 @@ window.onload = function() {
         function searchTable() {
     const input = document.getElementById("searchInput");
     const filter = input.value.toLowerCase();
-    const tables = document.querySelectorAll(".product-table table tbody");
+    const categories = document.querySelectorAll(".category-section"); // All categories
+    let anyCategoryVisible = false; // Flag to track if any category is visible after filtering
 
-    tables.forEach(tbody => {
-        const rows = tbody.getElementsByTagName("tr");
+    categories.forEach(categoryDiv => {
+        const table = categoryDiv.querySelector(".product-table table tbody");
+        const rows = table.getElementsByTagName("tr");
+        let categoryHasVisibleRows = false;
+
+        // Check each row in the table
         for (let i = 0; i < rows.length; i++) {
             const cells = rows[i].getElementsByTagName("td");
             let rowContainsText = false;
 
-            // Check each cell in the row
+            // Check each cell in the row for search text
             for (let j = 0; j < cells.length; j++) {
                 if (cells[j].innerText.toLowerCase().indexOf(filter) > -1) {
                     rowContainsText = true;
@@ -443,10 +448,30 @@ window.onload = function() {
                 }
             }
 
-            // Toggle row visibility based on match
+            // Toggle row visibility based on search match
             rows[i].style.display = rowContainsText ? "" : "none";
+
+            // If any row in the category has a match, mark category as visible
+            if (rowContainsText) {
+                categoryHasVisibleRows = true;
+            }
+        }
+
+        // Toggle visibility of the entire category based on the presence of matching rows
+        if (categoryHasVisibleRows) {
+            categoryDiv.style.display = "block"; // Show category
+            anyCategoryVisible = true;
+        } else {
+            categoryDiv.style.display = "none"; // Hide category if no rows match
         }
     });
+
+    // Ensure at least one category is always visible (in case nothing matches)
+    if (!anyCategoryVisible) {
+        document.getElementById("categories").style.display = "none"; // Optional: Hide entire container if no results found
+    } else {
+        document.getElementById("categories").style.display = "block"; // Show if any result matches
+    }
 }
     </script>  
          
@@ -558,12 +583,13 @@ window.onload = function() {
                             style="margin-left: 15px;text-align: center; width: 15%;font-size: 16px; box-sizing: border-box; background-color:#4CAF50; color: white; border: solid 2px rgba(255, 255, 255, 0.774);">
                 </span>
                 <span style="margin-left:15px; margin-right:15px;">
-                    <select id="category-select" onchange="filterCategory()">
-                        <option value="">--All Categories--</option>
-                        {% for category, items in products.items() %}
-                            <option value="{{ category }}">{{ category }}</option>
-                        {% endfor %}
-                    </select>
+                    <!-- CATEGORY DROPDOWN -->
+<span style="margin-left:15px; margin-right:15px;">
+    <select id="category-select" onchange="filterCategory()">
+        <option value="">--All Categories--</option>
+    </select>
+</span>
+
                 </span>
             </h1>
         </div>
@@ -596,40 +622,44 @@ window.onload = function() {
     <div id="loading" class="loading-text" style="display: none;">Loading more products...</div>
     
     <script>
-        let start = 0;
-        const limit = 5; // Load 5 categories at a time
-        let loading = false;
-        let allLoaded = false; // Stop fetching if no more products
-    
-        async function loadMoreProducts() {
-            if (loading || allLoaded) return;
-            loading = true;
-            document.getElementById("loading").style.display = "block";
-    
-            let response = await fetch(`/client?load_more=true&start=${start}`);
-            let data = await response.json();
-    
-            let newProducts = data.products;
-            if (Object.keys(newProducts).length === 0) {
-                allLoaded = true; // Stop fetching if no more products
-                document.getElementById("loading").innerText = "No more products.";
-                return;
-            }
-    
-            renderProducts(newProducts);
-            start += limit;
-            loading = false;
-            document.getElementById("loading").style.display = "none";
-    
-            if (!data.has_more) {
-                allLoaded = true; // No more products left to load
-                document.getElementById("loading").innerText = "No more products.";
-            }
+    let start = 0;
+    const limit = 5; // Load 5 categories at a time
+    let loading = false;
+    let allLoaded = false;
+    let allProducts = {}; // Store all loaded products globally
+
+    async function loadMoreProducts() {
+        if (loading || allLoaded) return;
+        loading = true;
+        document.getElementById("loading").style.display = "block";
+
+        let response = await fetch(`/client?load_more=true&start=${start}`);
+        let data = await response.json();
+
+        let newProducts = data.products;
+        if (Object.keys(newProducts).length === 0) {
+            allLoaded = true;
+            document.getElementById("loading").innerText = "No more products.";
+            return;
         }
-    
-        function renderProducts(products) {
-            let container = document.getElementById("categories");
-            for (let category in products) {
+
+        Object.assign(allProducts, newProducts); // Store globally for filtering
+        renderProducts(newProducts);
+        updateCategoryDropdown();
+        start += limit;
+        loading = false;
+        document.getElementById("loading").style.display = "none";
+
+        if (!data.has_more) {
+            allLoaded = true;
+            document.getElementById("loading").innerText = "No more products.";
+        }
+    }
+
+    function renderProducts(products) {
+        let container = document.getElementById("categories");
+        for (let category in products) {
+            if (!document.getElementById(`category-${category}`)) {
                 let categoryDiv = document.createElement("div");
                 categoryDiv.className = "category-section";
                 categoryDiv.id = `category-${category}`;
@@ -669,21 +699,8 @@ window.onload = function() {
                                         </td>
                                         <td>
                                             ${product[5] > 0 
-                                                ? `<input type="number" style="width: 60px;
-                                        padding: 6px;
-                                        border: 2px solid #ccc;
-                                        border-radius: 5px;
-                                        font-size: 14px;
-                                        text-align: center;
-                                        color: white;
-                                        background-color: #252525;" id="quantity-${product[0]}" placeholder="Qty" min="1" max="${product[5]}" required>
-                                                    <input type="text" style="width: 150px;
-                                        padding: 6px;
-                                        border: 2px solid #ccc;
-                                        border-radius: 5px;
-                                        font-size: 14px;
-                                        color: white;
-                                        background-color: #252525;" id="message-${product[0]}" placeholder="Message (Optional)">
+                                                ? `<input type="number" style="width: 60px; padding: 6px; border: 2px solid #ccc; border-radius: 5px; font-size: 14px; text-align: center; color: white; background-color: #252525;" id="quantity-${product[0]}" placeholder="Qty" min="1" max="${product[5]}" required>
+                                                    <input type="text" style="width: 150px; padding: 6px; border: 2px solid #ccc; border-radius: 5px; font-size: 14px; color: white; background-color: #252525;" id="message-${product[0]}" placeholder="Message (Optional)">
                                                     <button type="button" class="order-button" onclick="placeOrder('${product[0]}')">Order</button>`
                                                 : ""}
                                         </td>
@@ -696,22 +713,55 @@ window.onload = function() {
                 container.appendChild(categoryDiv);
             }
         }
-    
-        function toggleTableVisibility(tableId) {
-            let table = document.getElementById(tableId);
-            if (table) {
-                table.style.display = table.style.display === "none" ? "table" : "none";
-            }
+    }
+
+    function toggleTableVisibility(tableId) {
+        let table = document.getElementById(tableId);
+        if (table) {
+            table.style.display = table.style.display === "none" ? "table" : "none";
         }
-    
-        window.addEventListener("scroll", function () {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-                loadMoreProducts();
+    }
+
+    function filterCategory() {
+        const selectedCategory = document.getElementById("category-select").value;
+        const categories = document.querySelectorAll('.category-section');
+
+        categories.forEach(category => {
+            if (selectedCategory === "" || category.id === `category-${selectedCategory}`) {
+                category.style.display = 'block';
+            } else {
+                category.style.display = 'none';
             }
         });
+
+        // Ensure lazy-loaded categories are checked
+        if (!document.getElementById(`category-${selectedCategory}`) && selectedCategory !== "") {
+            loadMoreProducts();
+        }
+    }
+
     
-        // Load initial categories on page load
-        window.onload = loadMoreProducts;
+    function updateCategoryDropdown() {
+        let categorySelect = document.getElementById("category-select");
+        let existingCategories = new Set([...categorySelect.options].map(opt => opt.value));
+
+        for (let category in allProducts) {
+            if (!existingCategories.has(category)) {
+                let option = document.createElement("option");
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            }
+        }
+    }
+
+    window.addEventListener("scroll", function () {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+            loadMoreProducts();
+        }
+    });
+
+    window.onload = loadMoreProducts;
     </script>
     
 
@@ -839,21 +889,7 @@ function submitCart() {
 
     <!-- JavaScript to Filter and Show/Hide Categories -->
     <script>
-        function filterCategory() {
-            const selectedCategory = document.getElementById("category-select").value;
-            
-            // Get all category sections
-            const categories = document.querySelectorAll('.category-section');
-            
-            categories.forEach(category => {
-                // Show all categories if the "All Categories" option is selected
-                if (selectedCategory === "" || category.id === `category-${selectedCategory}`) {
-                    category.style.display = 'block';
-                } else {
-                    category.style.display = 'none';
-                }
-            });
-        }
+
     
     </script>
         <div id="imagePopup" class="popup">
