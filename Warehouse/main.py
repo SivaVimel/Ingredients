@@ -279,17 +279,28 @@ def index():
 
     # Handle Product Addition
     if request.method == 'POST':
-        name = request.form['name'].strip()
-        category = request.form['category'].strip()
-        cost_price = request.form['cost_price']
-        selling_price = request.form['selling_price']
-        quantity = request.form['quantity']
-        supplier = request.form['supplier'].strip()
-        expiry = request.form['expiry'].strip()
+        # Strip spaces at the beginning and end for name, category, and supplier
+        name = request.form['name'].strip() if request.form['name'] else ''
+        category = request.form['category'].strip() if request.form['category'] else ''
+        supplier = request.form['supplier'].strip() if request.form['supplier'] else ''
+    
+        # Ensure cost price, selling price, and quantity have proper fallback values
+        cost_price = request.form['cost_price'].strip() if request.form['cost_price'] else ''
+        selling_price = request.form['selling_price'].strip() if request.form['selling_price'] else ''
+        quantity = request.form['quantity'].strip() if request.form['quantity'] else ''
 
-        # Ensure expiry format is DD-MM-YYYY
-        expiry = expiry.replace("/", "-").replace(".", "-")  
+        # Handle expiry input (strip spaces and make sure format is consistent)
+        expiry = request.form['expiry'].strip() if request.form['expiry'] else ''
+        expiry = expiry.replace("/", "-").replace(".", "-")  # Replace slashes/dots with hyphens
 
+        # Ensure expiry format is DD-MM-YYYY (can add further validation here)
+        if len(expiry) == 10:  # Basic check to make sure expiry is in the format 'DD-MM-YYYY'
+            expiry_parts = expiry.split("-")
+            if len(expiry_parts) == 3:
+                # Validate month and day if necessary, or just let the user proceed
+                expiry = "-".join([expiry_parts[0].zfill(2), expiry_parts[1].zfill(2), expiry_parts[2]])
+
+        # Assign a new product ID
         product_id = sum(len(items) for items in products.values()) + 1
 
         # Image handling
@@ -301,20 +312,25 @@ def index():
         else:
             filename = None
 
+        # Create the product record
         product = [product_id, name, category, cost_price, selling_price, quantity, filename, supplier, expiry]
 
-
+        # Add the product to the correct category in the products dictionary
         if category not in products:
             products[category] = []
         products[category].append(product)
 
+        # Save updated products list to file
         save_products(products)
+
+        # Redirect to index page
         return redirect(url_for('index'))
+
 
     # **API for infinite scrolling**
     if request.args.get("load_more"):
         start = int(request.args.get("start", 0))
-        limit = 5  # Load 5 categories at a time
+        limit = 5000  # Load 5 categories at a time
 
         all_categories = list(products.keys())
         next_categories = all_categories[start:start + limit]
@@ -360,7 +376,7 @@ def client():
     # **API for infinite scrolling**
     if request.args.get("load_more"):
         start = int(request.args.get("start", 0))
-        limit = 5  # Load 5 categories at a time
+        limit = 5000  # Load 5 categories at a time
 
         all_categories = list(products.keys())
         next_categories = all_categories[start:start + limit]
@@ -583,6 +599,12 @@ def get_report_data():
     return jsonify(order_data)
 
 from collections import Counter
+
+@app.route('/get_categories')
+def get_categories():
+    products = load_products()
+    categories = list(products.keys())  # Get all category names
+    return jsonify({"categories": categories})
 
 @app.route('/get_chart_data')
 def get_chart_data():
