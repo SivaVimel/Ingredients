@@ -1767,19 +1767,19 @@ function closePopup1(popupId) {
 </datalist>
 
 <!-- Category -->
-<label for="category">Category:</label>
-<input list="category-list" name="category" id="category" required oninput="fetchCategories()">
-<datalist id="category-list"></datalist>
+<label for="category2">Category:</label>
+<input list="category-list2" name="category2" id="category2" required oninput="fetchCategories()">
+<datalist id="category-list2"></datalist>
 
 <script>
     async function fetchCategories() {
-        const input = document.getElementById("category").value;
-        const datalist = document.getElementById("category-list");
+        const input = document.getElementById("category2").value;
+        const datalist = document.getElementById("category-list2");
 
         if (input.length < 1) return; // Don't fetch for empty input
 
         try {
-            const response = await fetch(`/get_categories?query=${encodeURIComponent(input)}`);
+            const response = await fetch(`/get_categories2?query=${encodeURIComponent(input)}`);
             const categories = await response.json();
             
             datalist.innerHTML = ""; // Clear previous options
