@@ -170,31 +170,62 @@ def save_products(products):
 def edit_product():
     products = load_products()
     product_id = int(request.form['id'])
-    updated_name = request.form['name']
-    updated_category = request.form['category']
+    updated_name = request.form['name'].strip()
+    updated_category = request.form['category'].strip()
     updated_cost_price = request.form['cost_price']
     updated_selling_price = request.form['selling_price']
     updated_quantity = request.form['quantity']
-    updated_supplier = request.form['supplier']
-    updated_expiry = request.form['expiry']
+    updated_supplier = request.form['supplier'].strip()
+    updated_expiry = request.form['expiry'].strip()
 
-    # Locate and update the product
+    # Ensure expiry format is always DD-MM-YYYY
+    updated_expiry = updated_expiry.replace("/", "-").replace(".", "-")
+
+    image = request.files.get('image')  # Get the image file
+
+    old_category = None
+    product_to_move = None
+
+    # Locate the product and remove it from its old category
     for category, items in products.items():
         for product in items:
-            if product[0] == product_id:  # Accessing the ID at index 0
-                # Update the product details based on their position in the list
-                product[1] = updated_name
-                product[2] = updated_category
-                product[3] = updated_cost_price
-                product[4] = updated_selling_price
-                product[5] = updated_quantity
-                product[7] = updated_supplier
-                product[8] = updated_expiry
+            if product[0] == product_id:  # Match by Product ID
+                old_category = category
+                product_to_move = product  # Save product details
                 break
+        if product_to_move:
+            products[category].remove(product_to_move)  # Remove from old category
+            break  # Exit loop after finding the product
+
+    if product_to_move:
+        # Update product details
+        product_to_move[1] = updated_name
+        product_to_move[2] = updated_category
+        product_to_move[3] = updated_cost_price
+        product_to_move[4] = updated_selling_price
+        product_to_move[5] = updated_quantity
+        product_to_move[7] = updated_supplier
+        product_to_move[8] = updated_expiry
+
+        # Handle image update
+        if image and image.filename:
+            filename = secure_filename(image.filename)
+            image_path = os.path.join("static", filename)
+            image.save(image_path)
+            product_to_move[6] = filename  # Update image filename in product details
+
+        # If the new category doesn't exist, create it
+        if updated_category not in products:
+            products[updated_category] = []
+
+        # Add the product to the new category
+        products[updated_category].append(product_to_move)
 
     # Save updated products back to the file
     save_products(products)
     return redirect(url_for('index'))
+
+
 
 @app.route('/delete', methods=['POST'])
 def delete_product():
@@ -242,26 +273,22 @@ def index():
     # Sort products within each category
     for category, items in products.items():
         try:
-            # Sort products within each category, converting price values to float
-            for category, items in products.items():
-                products[category] = sorted(items, key=lambda x: (float(x[5]) == 0, float(x[5])))
+            products[category] = sorted(items, key=lambda x: (float(x[5]) == 0, float(x[5])))
         except ValueError as e:
             print(f"ValueError: {e} while sorting products in category {category}")
 
-    # Pagination logic
-    categories_per_page = 5  # Show 5 categories per page
-    all_categories = list(products.keys())  # Get all category names
-    total_pages = (len(all_categories) + categories_per_page - 1) // categories_per_page  # Calculate total pages
-
     # Handle Product Addition
     if request.method == 'POST':
-        name = request.form['name']
-        category = request.form['category']
+        name = request.form['name'].strip()
+        category = request.form['category'].strip()
         cost_price = request.form['cost_price']
         selling_price = request.form['selling_price']
         quantity = request.form['quantity']
-        supplier = request.form['supplier']
-        expiry = request.form['expiry']
+        supplier = request.form['supplier'].strip()
+        expiry = request.form['expiry'].strip()
+
+        # Ensure expiry format is DD-MM-YYYY
+        expiry = expiry.replace("/", "-").replace(".", "-")  
 
         product_id = sum(len(items) for items in products.values()) + 1
 
@@ -276,52 +303,41 @@ def index():
 
         product = [product_id, name, category, cost_price, selling_price, quantity, filename, supplier, expiry]
 
+
         if category not in products:
             products[category] = []
         products[category].append(product)
 
         save_products(products)
+        return redirect(url_for('index'))
 
-        # **Redirect to the last page**
-        return redirect(url_for('index', page=total_pages))
+    # **API for infinite scrolling**
+    if request.args.get("load_more"):
+        start = int(request.args.get("start", 0))
+        limit = 5  # Load 5 categories at a time
 
-    # Get current page number (default to 1)
-    page = request.args.get("page", default=1, type=int)
+        all_categories = list(products.keys())
+        next_categories = all_categories[start:start + limit]
 
-    # Ensure page is within valid range
-    if page < 1:
-        page = 1
-    elif page > total_pages:
-        page = total_pages
+        paginated_products = {category: products[category] for category in next_categories}
 
-    # Slice the categories for the current page
-    start_index = (page - 1) * categories_per_page
-    end_index = start_index + categories_per_page
-    paginated_categories = all_categories[start_index:end_index]
-
-    # Create a new dictionary with only paginated categories
-    paginated_products = {category: products[category] for category in paginated_categories}
-
-    # Ensure `top_clients` is always a list
-    top_clients = get_top_clients() or []
+        return jsonify({"products": paginated_products, "has_more": len(next_categories) == limit})  # Indicate if more products exist
 
     return render_template(
         'index.html',
-        top_clients=top_clients,
-        products=paginated_products,  # Only send the paginated categories
+        top_clients=get_top_clients() or [],
+        products={},  # Initially, load empty products (frontend will fetch them)
         total_products=total_products,
         category_counts=category_counts,
         username=username,
-        show_login_popup=show_login_popup,
-        page=page,
-        total_pages=total_pages  # Send total pages for navigation
+        show_login_popup=show_login_popup
     )
 
 
 @app.route('/client')
 def client():
     products = load_products()
-    username = session.get("username")  # Retrieve the username from the session
+    username = session.get("username")
     show_login_popup = username is None
 
     # Load order history
@@ -337,33 +353,28 @@ def client():
     # Sort products
     for category, items in products.items():
         try:
-            # Sort products within each category, converting price values to float
-            for category, items in products.items():
-                products[category] = sorted(items, key=lambda x: (float(x[5]) == 0, float(x[5])))
+            products[category] = sorted(items, key=lambda x: (float(x[5]) == 0, float(x[5])))
         except ValueError as e:
             print(f"ValueError: {e} while sorting products in category {category}")
 
-    # Pagination Logic
-    all_categories = list(products.keys())
-    categories_per_page = 5
-    page = request.args.get("page", default=1, type=int)
+    # **API for infinite scrolling**
+    if request.args.get("load_more"):
+        start = int(request.args.get("start", 0))
+        limit = 5  # Load 5 categories at a time
 
-    start_index = (page - 1) * categories_per_page
-    end_index = start_index + categories_per_page
-    paginated_categories = all_categories[start_index:end_index]
+        all_categories = list(products.keys())
+        next_categories = all_categories[start:start + limit]
 
-    paginated_products = {cat: products[cat] for cat in paginated_categories}
+        paginated_products = {category: products[category] for category in next_categories}
 
-    total_pages = (len(all_categories) + categories_per_page - 1) // categories_per_page
+        return jsonify({"products": paginated_products, "has_more": len(next_categories) == limit})  # Indicate if more products exist
 
     return render_template(
         "client.html",
-        products=paginated_products,
+        products={},  # Initially, load empty products (frontend will fetch them)
         user_orders=user_orders,
         username=username,
-        show_login_popup=show_login_popup,
-        page=page,
-        total_pages=total_pages
+        show_login_popup=show_login_popup
     )
 
 @app.route('/chat1', methods=['POST'])
