@@ -699,7 +699,7 @@ window.onload = function() {
                                         </td>
                                         <td>
                                             ${product[5] > 0 
-                                                ? `<input type="number" style="width: 60px; padding: 6px; border: 2px solid #ccc; border-radius: 5px; font-size: 14px; text-align: center; color: white; background-color: #252525;" id="quantity-${product[0]}" placeholder="Qty" min="1" max="${product[5]}" required>
+                                                ? `<input type="number" style="width: 60px; padding: 6px; border: 2px solid #ccc; border-radius: 5px; font-size: 14px; text-align: center; color: white; background-color: #252525;" id="quantity-${product[0]}" placeholder="Qty" min="1" max="${product[5]}" min="1" max="${product[5]}" value="1" required>
                                                     <input type="text" style="width: 150px; padding: 6px; border: 2px solid #ccc; border-radius: 5px; font-size: 14px; color: white; background-color: #252525;" id="message-${product[0]}" placeholder="Message (Optional)">
                                                     <button type="button" class="order-button" onclick="placeOrder('${product[0]}')">Order</button>`
                                                 : ""}
