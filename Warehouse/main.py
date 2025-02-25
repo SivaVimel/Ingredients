@@ -413,21 +413,17 @@ def client():
     # **API for initial load & infinite scroll**
     if request.args.get("load_more"):
         start = int(request.args.get("start", 0))
-        limit = int(request.args.get("limit", 1))  # Load 5 categories initially
+        limit = int(request.args.get("limit", 10))  # Load 5 categories initially
 
-        all_categories = list(products.keys())
+        all_categories = categories
         next_categories = all_categories[start:start + limit]
 
         paginated_products = {category: products[category] for category in next_categories}
         return jsonify({"products": paginated_products, "has_more": len(next_categories) == limit})
 
-    # **When first rendering the page, return first 5 categories**
-    initial_categories = categories[:5]
-    initial_products = {category: products[category] for category in initial_categories}
 
     return render_template(
         "client.html",
-        products=initial_products,  # Pass initial products to frontend
         user_orders=user_orders,
         username=username,
         show_login_popup=show_login_popup,
