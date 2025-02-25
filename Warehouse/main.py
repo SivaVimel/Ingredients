@@ -138,6 +138,12 @@ def get_orders_data():
 CATEGORIES_PER_PAGE = 5  # Show 5 categories per page
 
 
+@app.route('/get_products/<category>')
+def get_products1(category):
+    products = load_products()  # Load all products
+    category_products = products.get(category, [])  # Get products for the selected category
+    return jsonify(category_products)  # Return as JSON
+
 @app.route('/get_categories')
 def get_categories():
     products = load_products()
@@ -381,10 +387,10 @@ def index():
         show_login_popup=show_login_popup
     )
 
-
 @app.route('/client')
 def client():
     products = load_products()
+    categories = list(products.keys())
     username = session.get("username")
     show_login_popup = username is None
 
@@ -395,7 +401,6 @@ def client():
     else:
         orders = []
 
-    # Filter orders for the logged-in user
     user_orders = [order for order in orders if order[0][22::] == username] if username else []
 
     # Sort products
@@ -405,25 +410,31 @@ def client():
         except ValueError as e:
             print(f"ValueError: {e} while sorting products in category {category}")
 
-    # **API for infinite scrolling**
+    # **API for initial load & infinite scroll**
     if request.args.get("load_more"):
         start = int(request.args.get("start", 0))
-        limit = 5000  # Load 5 categories at a time
+        limit = int(request.args.get("limit", 1))  # Load 5 categories initially
 
         all_categories = list(products.keys())
         next_categories = all_categories[start:start + limit]
 
         paginated_products = {category: products[category] for category in next_categories}
+        return jsonify({"products": paginated_products, "has_more": len(next_categories) == limit})
 
-        return jsonify({"products": paginated_products, "has_more": len(next_categories) == limit})  # Indicate if more products exist
+    # **When first rendering the page, return first 5 categories**
+    initial_categories = categories[:5]
+    initial_products = {category: products[category] for category in initial_categories}
 
     return render_template(
         "client.html",
-        products={},  # Initially, load empty products (frontend will fetch them)
+        products=initial_products,  # Pass initial products to frontend
         user_orders=user_orders,
         username=username,
-        show_login_popup=show_login_popup
+        show_login_popup=show_login_popup,
+        categories=categories
     )
+
+
 
 @app.route('/chat1', methods=['POST'])
 def chat1():
@@ -710,35 +721,39 @@ def submit_cart():
     if username == "Guest":
         return jsonify({'success': False, 'message': 'You need to log in to place an order'})
 
-    products = load_products()  # Load your products
+    products = load_products()  # Load all products
+    updated_cart = []  # To keep only valid items
 
-    # Process each item in the cart
     for item in cart_items:
         product_id = item['product_id']
         quantity = item['quantity']
         message = item['message']
 
-        # Locate the product and check availability
         for category, items in products.items():
             for product in items:
                 if product[0] == product_id:
-                    available_quantity = int(product[5])  # Available quantity
+                    available_quantity = int(product[5])  # Available stock
+
+                    if available_quantity == 0:
+                        continue  # Skip 0-stock products
+
                     if quantity > available_quantity:
                         return jsonify({'success': False, 'message': f'Insufficient stock for {product[1]}'})
 
-                    # Update product quantity in memory
                     product[5] = str(available_quantity - quantity)
-                    save_products(products)
+                    save_products(products)  # Save stock update
 
-                    # Save order (log to file or database)
                     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     with open("data/Orders.txt", "a") as order_file:
                         order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
                     with open("data/OrderHistory.txt", "a") as order_file:
                         order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
 
-    # Clear the cart after submission
+                    updated_cart.append(item)  # Keep only valid items
+
+    # ✅ Clear the cart after order is placed
     session.pop('cart', None)
+    session.modified = True
 
     return jsonify({'success': True})
 
@@ -749,15 +764,22 @@ def update_cart():
     quantity = int(data['order_quantity'])
     message = data['order_Message']
 
-    # Update the item in the session cart
+    updated_cart = []
+
     for item in session.get('cart', []):
         if item['product_id'] == product_id:
-            item['quantity'] = quantity
-            item['message'] = message
-            break
+            if quantity > 0:
+                item['quantity'] = quantity
+                item['message'] = message
+                updated_cart.append(item)  # Keep only valid products
+        else:
+            updated_cart.append(item)  # Keep other items
 
+    session['cart'] = updated_cart
     session.modified = True
+
     return jsonify({'success': True})
+
 
 @app.route('/view-cart', methods=['GET'])
 def view_cart():
@@ -765,21 +787,28 @@ def view_cart():
         return jsonify([])
 
     cart_items = session['cart']
-    # Retrieve product details (name, price) from products database or data
-    products = load_products()  # Or use any logic to load products
+    products = load_products()  # Load all products
+
     cart_details = []
-    
+    updated_cart = []  # To store only available products
+
     for item in cart_items:
         product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
-        if product:
+        
+        if product and int(product[5]) > 0:  # Check if stock is > 0
             cart_details.append({
                 'product_id': item['product_id'],
                 'name': product[1],
                 'quantity': item['quantity'],
                 'message': item['message']
             })
+            updated_cart.append(item)  # Keep product in cart
+
+    session['cart'] = updated_cart  # Remove out-of-stock items
+    session.modified = True
 
     return jsonify(cart_details)
+
 
 @app.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
