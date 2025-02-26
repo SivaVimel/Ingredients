@@ -586,7 +586,84 @@ canvas {
             padding: 20px;
         }
 
+        #notepad-container751 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #notepad-list751 {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        .notepad-item751 {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            color: black;  /* Ensure black text */
+            text-align: left;
+        }
+        .notepad-item751:hover {
+            background: #f1f1f1;
+        }
 
+        /* Popup Styles */
+        #notepad-popup751 {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .popup-overlay751 {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        #notepad-text751 {
+            width: 100%;
+            height: 200px;
+            overflow-y: auto;
+            resize: none;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .btn751 {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-save751 {
+            background: green;
+            color: white;
+        }
+        .btn-close751 {
+            background: red;
+            color: white;
+        }
         </style>     
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
 <!-- Include jsPDF CDN -->
@@ -1234,6 +1311,7 @@ function clearnotify() {
                     </div>
                     <img style="width:40px; margin-left:15px;" src="static/order.png" alt="Orders" onclick="fetchOrders()">
                     <img style="width:40px; margin-left:15px;" src="static/report.png" alt="Report" onclick="showReportPopup()">
+                    <img style="width:40px; margin-left:15px;" id="notepad-image751" src="static/notes.png" alt="Notepad" onclick="showNotepadList751()">
                     <div id="reportModal" class="modal9" style="display:none;">
                         <span class="close9" onclick="closeReportPopup()">&times;</span>
                         <div class="modal9-content">
@@ -1460,6 +1538,76 @@ function clearnotify() {
                                     console.error('Error deleting invoice:', error);
                                     alert('An error occurred while deleting the invoice.');
                                 });
+                        }
+                    </script>
+                     <div id="notepad-container751">
+                        <div id="notepad-list751">
+                            <h3 style="color:#242424; text-align: center;">Select a Wishlist</h3>
+                            {% for notepad in notepads %}
+                                <div class="notepad-item751" onclick="loadNotepad751('{{ notepad }}')">
+                                    📄 {{ notepad[:-4] }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                
+                    <!-- Popup Overlay -->
+                    <div class="popup-overlay751" id="popup-overlay751" onclick="closeNotepad751()"></div>
+                
+                    <!-- Notepad Popup -->
+                    <div id="notepad-popup751">
+                        <h3 id="notepad-title751" style="color:#242424">Wishlist</h3>
+                        <textarea id="notepad-text751"></textarea>
+                        <button class="btn751 btn-save751" onclick="saveNotepad751()">Save Changes</button>
+                        <button class="btn751 btn-close751" onclick="closeNotepad751()">Close</button>
+                    </div>
+                
+                    <script>
+                        let currentFilename = "";
+                
+                        function showNotepadList751() {
+                            let list = document.getElementById("notepad-list751");
+                            list.style.display = (list.style.display === "block") ? "none" : "block";
+                        }
+                
+                        function loadNotepad751(filename) {
+                            fetch(`/get-notepad?filename=${filename}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        currentFilename = filename;
+                                        document.getElementById("notepad-title751").innerText = `Editing: ${filename.replace('.txt', '')}`;
+                                        document.getElementById("notepad-text751").value = data.content || "";
+                                        document.getElementById("notepad-popup751").style.display = "block";
+                                        document.getElementById("popup-overlay751").style.display = "block";
+                                    } else {
+                                        alert("Error: " + data.message);
+                                    }
+                                });
+                        }
+                
+                        function saveNotepad751() {
+                            const content = document.getElementById("notepad-text751").value;
+                
+                            fetch('/save-notepad', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filename: currentFilename, content })
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    alert("Wishlist saved successfully!");
+                                    closeNotepad751();
+                                } else {
+                                    alert("Error: " + result.message);
+                                }
+                            });
+                        }
+                
+                        function closeNotepad751() {
+                            document.getElementById("notepad-popup751").style.display = "none";
+                            document.getElementById("popup-overlay751").style.display = "none";
                         }
                     </script>
 
