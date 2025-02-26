@@ -375,6 +375,43 @@ nav span {
     color: aqua;
 }
 
+#notepad-popup751 {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        /* Scrollable textarea */
+        #notepad-text751 {
+            width: 100%;
+            height: 150px;
+            overflow-y: auto;
+            resize: none;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .popup-overlay751 {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
         </style>     
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>   
@@ -557,7 +594,61 @@ window.onload = function() {
                         <button style="border:none; border-radius: 5px; background-color: #fffb00; width: 100%; font-size:medium;" onclick="submitCart()">Place Order</button>
                     </div>
                     
+<!-- Hidden User Input (Dynamically pass username from Flask) -->
+<input type="hidden" id="username751" value="{{ username }}">
 
+<!-- Clickable Image -->
+<img src="static/notes.png" alt="Notepad" onclick="openNotepad751()" style="cursor: pointer; width: 50px; margin-left: 25px;">
+
+<!-- Popup Overlay -->
+<div class="popup-overlay751" id="popup-overlay751" onclick="closeNotepad751()"></div>
+
+<!-- Notepad Popup -->
+<div id="notepad-popup751">
+    <h3 style="color:#333">Wishlist</h3>
+    <textarea id="notepad-text751"></textarea>
+    <button onclick="saveMessage751()">Save</button>
+    <button onclick="closeNotepad751()">Close</button>
+</div>
+
+<script>
+    // Use the username from the hidden input field
+    const username = document.getElementById("username751").value;
+
+    function openNotepad751() {
+        fetch(`/get-message?username=${username}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("notepad-text751").value = data.message || "";
+                document.getElementById("notepad-popup751").style.display = "block";
+                document.getElementById("popup-overlay751").style.display = "block";
+            });
+    }
+
+    function saveMessage751() {
+        const message = document.getElementById("notepad-text751").value;
+
+        fetch('/save-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, message })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert("Message saved!");
+                closeNotepad751();
+            } else {
+                alert("Failed to save message.");
+            }
+        });
+    }
+
+    function closeNotepad751() {
+        document.getElementById("notepad-popup751").style.display = "none";
+        document.getElementById("popup-overlay751").style.display = "none";
+    }
+</script>
                    
 
 <div id="order-history" style="display:none; color:#3e8e41">
