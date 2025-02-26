@@ -705,7 +705,7 @@ def get_order_history():
         return jsonify([])  # Return an empty list if the file doesn't exist
 
     return jsonify(history_orders)
-    
+ 
 @app.route('/submit-cart', methods=['POST'])
 def submit_cart():
     cart_items = session.get('cart', [])
@@ -719,6 +719,7 @@ def submit_cart():
 
     products = load_products()  # Load all products
     updated_cart = []  # To keep only valid items
+    insufficient_stock = []  # List to store items with low stock
 
     for item in cart_items:
         product_id = item['product_id']
@@ -731,13 +732,16 @@ def submit_cart():
                     available_quantity = int(product[5])  # Available stock
 
                     if available_quantity == 0:
+                        insufficient_stock.append(f"{product[1]} (Out of stock)")
                         continue  # Skip 0-stock products
 
                     if quantity > available_quantity:
-                        return jsonify({'success': False, 'message': f'Insufficient stock for {product[1]}'})
+                        insufficient_stock.append(f"{product[1]} (Only {available_quantity} available)")
+                        continue  # Don't process this item
 
+                    # Reduce stock and save
                     product[5] = str(available_quantity - quantity)
-                    save_products(products)  # Save stock update
+                    save_products(products)
 
                     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     with open("data/Orders.txt", "a") as order_file:
@@ -747,11 +751,16 @@ def submit_cart():
 
                     updated_cart.append(item)  # Keep only valid items
 
+    # If any item has insufficient stock, show all of them in a message
+    if insufficient_stock:
+        return jsonify({'success': False, 'message': f"Insufficient stock for: {', '.join(insufficient_stock)}"})
+
     # ✅ Clear the cart after order is placed
     session.pop('cart', None)
     session.modified = True
 
     return jsonify({'success': True})
+
 
 @app.route('/update-cart', methods=['POST'])
 def update_cart():
