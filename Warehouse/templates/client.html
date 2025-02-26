@@ -569,9 +569,27 @@ window.onload = function() {
                         }
                     });
                 }
+                function searchPage() {
+            const filter = document.getElementById("searchInput").value.toLowerCase();
+            const categories = document.querySelectorAll(".category-section");
+            let anyCategoryVisible = false;
+
+            categories.forEach(categoryDiv => {
+                const textContent = categoryDiv.innerText.toLowerCase();
+                if (textContent.includes(filter)) {
+                    categoryDiv.style.display = "block";
+                    anyCategoryVisible = true;
+                } else {
+                    categoryDiv.style.display = "none";
+                }
+            });
+
+            document.getElementById("categories").style.display = anyCategoryVisible ? "block" : "none";
+        }
+
             </script>
             <h1 style="margin-right:15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-style: italic; font-weight: 300;letter-spacing: 0.5px;">Welcome {{ username }}
-                
+                <span><input type="text" id="searchInput" placeholder="Search..." onkeyup="searchPage()"></span>
                 <span style="margin-left:15px; margin-right:50px;">
                     <!-- CATEGORY DROPDOWN -->
                     <span style="margin-left:15px; margin-right:50px;">
@@ -586,6 +604,27 @@ window.onload = function() {
                 </span>
             </h1>
         </div>
+        <script>
+            let hasTriggeredLoad = false; // Flag to prevent multiple triggers
+
+document.getElementById("searchInput").addEventListener("focus", function () {
+    if (!hasTriggeredLoad) {
+        hasTriggeredLoad = true; // Prevent re-triggering
+
+        let scrollEvent = new Event('scroll', { bubbles: true });
+        let times = 10; // Adjust the number of scroll triggers
+
+        let interval = setInterval(() => {
+            if (times-- > 0) {
+                window.dispatchEvent(scrollEvent); // Simulate scroll event
+            } else {
+                clearInterval(interval); // Stop triggering after a few times
+            }
+        }, 500); // Adjust timing as needed
+    }
+});
+
+        </script>
     
         <!-- Modal for the add product form -->
         <div id="productModal" class="modal">
@@ -866,7 +905,6 @@ window.onload = function() {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            window.location.reload();  // Reload the page to reflect changes
         } else {
             alert("Failed to add to cart.");
         }
