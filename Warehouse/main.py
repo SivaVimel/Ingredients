@@ -307,6 +307,7 @@ def index():
     username = session.get("username")
     show_login_popup = username is None
     total_products, category_counts = get_product_counts()
+    notepads = [f for f in os.listdir(MESSAGE_DIR) if f.endswith('.txt')]
 
     # Sort products within each category
     for category, items in products.items():
@@ -384,8 +385,42 @@ def index():
         total_products=total_products,
         category_counts=category_counts,
         username=username,
-        show_login_popup=show_login_popup
+        show_login_popup=show_login_popup,
+        notepads=notepads
     )
+
+@app.route('/get-notepad', methods=['GET'])
+def get_notepad():
+    filename = request.args.get('filename')
+
+    if not filename or not filename.endswith('.txt'):
+        return jsonify({'success': False, 'message': 'Invalid file'})
+
+    file_path = os.path.join(MESSAGE_DIR, filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'success': False, 'message': 'File not found'})
+
+    with open(file_path, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    return jsonify({'success': True, 'filename': filename, 'content': content})
+
+@app.route('/save-notepad', methods=['POST'])
+def save_notepad():
+    data = request.json
+    filename = data.get('filename')
+    content = data.get('content')
+
+    if not filename or not content:
+        return jsonify({'success': False, 'message': 'Invalid data'})
+
+    file_path = os.path.join(MESSAGE_DIR, filename)
+
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(content)
+
+    return jsonify({'success': True, 'message': 'Notepad saved successfully'})
 
 @app.route('/client')
 def client():
@@ -705,6 +740,42 @@ def get_order_history():
         return jsonify([])  # Return an empty list if the file doesn't exist
 
     return jsonify(history_orders)
+
+MESSAGE_DIR = "messages"
+os.makedirs(MESSAGE_DIR, exist_ok=True)
+
+@app.route('/get-message', methods=['GET'])
+def get_message751():
+    username = request.args.get('username', '')
+
+    if not username:
+        return jsonify({'success': False, 'message': 'Username is required'})
+
+    file_path = os.path.join(MESSAGE_DIR, f"{username}.txt")
+
+    if os.path.exists(file_path):
+        with open(file_path, "r") as file:
+            message = file.read()
+    else:
+        message = ""
+
+    return jsonify({'success': True, 'message': message})
+
+@app.route('/save-message', methods=['POST'])
+def save_message751():
+    data = request.json
+    username = data.get('username', '')
+    message = data.get('message', '')
+
+    if not username:
+        return jsonify({'success': False, 'message': 'Username is required'})
+
+    file_path = os.path.join(MESSAGE_DIR, f"{username}.txt")
+
+    with open(file_path, "w") as file:
+        file.write(message)
+
+    return jsonify({'success': True, 'message': 'Message saved successfully'})
  
 @app.route('/submit-cart', methods=['POST'])
 def submit_cart():
