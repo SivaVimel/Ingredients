@@ -688,7 +688,20 @@ document.getElementById("searchInput").addEventListener("focus", function () {
                 </form>            
             </div>
         </div>
-
+        <div id="cart-popup" style="
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: aqua;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    z-index: 9999;
+">
+    <img src="static/trolley.png" alt="Added to Cart" style="width: 100px; height: 100px;">
+</div>
     <!-- Product Categories and Tables -->
     <!-- Product Categories and Tables -->
     <div id="categories"></div>
@@ -948,10 +961,20 @@ document.getElementById("searchInput").addEventListener("focus", function () {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
+            showCartPopup();  // Show popup when added to cart
         } else {
             alert("Failed to add to cart.");
         }
     });
+
+function showCartPopup() {
+    const popup = document.getElementById("cart-popup");
+    popup.style.display = "block";  // Show popup
+    setTimeout(() => {
+        popup.style.display = "none";  // Hide after 1 second
+    }, 1000);
+}
+
 }
 function closeCart() {
     document.getElementById("cart-content").style.display = "none";
