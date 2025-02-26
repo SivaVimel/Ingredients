@@ -279,20 +279,63 @@
     height: 88.89px;
     object-fit: cover;
 }
+
+#cart-content {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgb(27, 27, 27);
+    padding: 20px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 80vh;
+    overflow: hidden;
+    width: 80%;
+}
+
+/* Cart table styling */
 #cart-table {
     background-color: #252525;
     color: white;
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed; /* Ensures equal column width */
 }
 
+/* Keep header fixed */
+#cart-table thead {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Scrollable cart body */
+#cart-table tbody {
+    display: block;
+    max-height: 300px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* Table row styling */
+#cart-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Table headers and cells */
 #cart-table th, #cart-table td {
-    background-color: #252525;
     border: 1px solid white;
     padding: 10px;
     text-align: left;
+    background-color: #252525;
 }
 
+/* Header background */
 #cart-table th {
     background-color: #333;
 }
@@ -497,7 +540,7 @@ window.onload = function() {
                     <img style="width:3.7%; margin-left:15px; cursor: pointer;" src="static/notification.png" alt="Orders" onclick="toggleOrderHistory()">
                     <img style="width:3.7%; margin-left:15px; cursor: pointer;" src="static/cart.png" alt="Cart" onclick="viewCart()">
                     
-                    <div id="cart-content" style="display:none; position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: rgb(27, 27, 27); padding: 20px; border: 2px solid #ccc; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);">
+                    <div id="cart-content">
                         <button onclick="closeCart()" style="float: right; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 5px;">X</button>
                         <h2>Your Cart</h2>
                         <table id="cart-table">
@@ -924,9 +967,15 @@ function viewCart() {
             let row = document.createElement("tr");
             row.innerHTML = `
                 <td>${item.name}</td>
-                <td><input type="number" value="${item.quantity}" id="edit-quantity-${item.product_id}"></td>
-                <td><input type="text" value="${item.message}" id="edit-message-${item.product_id}"></td>
-                <td><button onclick="updateCartItem(${item.product_id})">Update</button></td>
+                <td><input style="width:80%;" type="number" value="${item.quantity}" id="edit-quantity-${item.product_id}"></td>
+                <td><input style="width:80%;" type="text" value="${item.message}" id="edit-message-${item.product_id}"></td>
+                <td><button style="border: none;
+    border-radius: 5px;
+    width: 100%;
+    font-size: medium;
+    padding: 10px;
+    margin-top: 10px;
+    cursor: pointer;" onclick="updateCartItem(${item.product_id})">Update</button></td>
             `;
             cartTable.appendChild(row);
         });
@@ -969,10 +1018,11 @@ function submitCart() {
             alert("Order placed successfully!");
             window.location.reload();  // Reload the page to reflect changes
         } else {
-            alert("Failed to place order.");
+            alert(result.message);  // Show the detailed error message
         }
     });
 }
+
 
 
         function sendNotifyRequest(productId, productName, productCategory) {
