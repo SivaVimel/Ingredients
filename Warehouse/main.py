@@ -371,7 +371,6 @@ def index():
 
         # ✅ Create the product list entry
         product = [product_id, name, category, cost_price, selling_price, quantity, filename, supplier, expiry]
-        print(f"📦 Adding Product: {product}")  # Debugging
 
         # ✅ Add product to the correct category
         products[category].append(product)
