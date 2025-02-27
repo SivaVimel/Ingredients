@@ -225,6 +225,7 @@ def edit_product():
 
     # Ensure expiry format is always DD-MM-YYYY
     updated_expiry = updated_expiry.replace("/", "-").replace(".", "-").replace("'", "").replace('"', '')
+    updated_quantity = updated_quantity.replace(".00","").replace(".","")
 
     image = request.files.get('image')  # Get image file (if updated)
     existing_image = None  # Store the existing image filename
@@ -331,8 +332,7 @@ def index():
         quantity = request.form['quantity'].strip() if request.form['quantity'] else '0'
         expiry = request.form['expiry'].strip() if request.form['expiry'] else ''
         
-        # 🔍 Debugging: Print the received form data
-        print(f"📩 Received Product Data: Name={name}, Category={category}, Cost={cost_price}, Selling={selling_price}, Quantity={quantity}, Expiry={expiry}")
+        quantity = quantity.replace(".00","").replace(".","")
         
         # ✅ Validate numeric fields
         try:
@@ -345,6 +345,7 @@ def index():
 
         # ✅ Ensure expiry date format is consistent
         expiry = expiry.replace("/", "-").replace(".", "-").replace("'","").replace('"','')  # Replace slashes/dots with hyphens
+
         if expiry:
             expiry_parts = expiry.split("-")
             if len(expiry_parts) == 3:
@@ -906,10 +907,16 @@ def view_cart():
 
 @app.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
+    username = session.get("username", "Guest")
     data = request.get_json()
     product_id = int(data['id'])
     quantity = int(data['order_quantity'])
     message = data['order_Message']
+    productName = data['product_name']
+    productCat = data['product_cat']
+
+    with open(f"messages/{username}.txt", "a") as f:
+                f.write(f"ID: {product_id} | Name: {productName} | Category: {productCat} | Quantity: {quantity} \n \n \n")
 
     # Initialize cart if not already
     if 'cart' not in session:
