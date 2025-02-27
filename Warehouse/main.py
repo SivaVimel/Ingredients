@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import pytz
 from collections import defaultdict
-
+import re
 import google.generativeai as genai
 
 # Configure Gemini API
@@ -213,16 +213,16 @@ def save_products(products):
 def edit_product():
     products = load_products()
     product_id = int(request.form['id'])
-    updated_name = request.form['name'].strip()
-    updated_category = request.form['category'].strip()
+    updated_name = sanitize_input(request.form['name'].strip())
+    updated_category = sanitize_input(request.form['category'].strip())
     updated_cost_price = request.form['cost_price']
     updated_selling_price = request.form['selling_price']
     updated_quantity = request.form['quantity']
-    updated_supplier = request.form['supplier'].strip()
+    updated_supplier = sanitize_input(request.form['supplier'].strip())
     updated_expiry = request.form['expiry'].strip()
 
     # Ensure expiry format is always DD-MM-YYYY
-    updated_expiry = updated_expiry.replace("/", "-").replace(".", "-")
+    updated_expiry = updated_expiry.replace("/", "-").replace(".", "-").replace("'","").replace('"','')
 
     image = request.files.get('image')  # Get the image file
 
@@ -306,6 +306,10 @@ def get_product_counts():
 
     return total_products, category_counts
 
+def sanitize_input(input_string):
+    """Sanitize the input by removing special characters."""
+    return re.sub(r"[\'\":,]", "", input_string)
+
 @app.route('/007PageLoginAdminThe007', methods=['GET', 'POST'])
 def index():
     products = load_products()
@@ -323,18 +327,20 @@ def index():
 
     # Handle Product Addition
     if request.method == 'POST':
-        name = request.form['name'].strip() if request.form['name'] else ''
-        category = request.form['category2'].strip() if request.form['category2'] else ''
-        supplier = request.form['supplier'].strip() if request.form['supplier'] else ''
-
+        # Sanitize inputs to remove unwanted special characters
+        name = sanitize_input(request.form['name'].strip()) if request.form['name'] else ''
+        category = sanitize_input(request.form['category2'].strip()) if request.form['category2'] else ''
+        supplier = sanitize_input(request.form['supplier'].strip()) if request.form['supplier'] else ''
+        
+        # Cost, Selling, and Quantity with default values if empty
         cost_price = request.form['cost_price'].strip() if request.form['cost_price'] else '0'
         selling_price = request.form['selling_price'].strip() if request.form['selling_price'] else '0'
         quantity = request.form['quantity'].strip() if request.form['quantity'] else '0'
         expiry = request.form['expiry'].strip() if request.form['expiry'] else ''
-
+        
         # 🔍 Debugging: Print the received form data
         print(f"📩 Received Product Data: Name={name}, Category={category}, Cost={cost_price}, Selling={selling_price}, Quantity={quantity}, Expiry={expiry}")
-
+        
         # ✅ Validate numeric fields
         try:
             cost_price = float(cost_price)
@@ -345,7 +351,7 @@ def index():
             return "Invalid numerical values", 400
 
         # ✅ Ensure expiry date format is consistent
-        expiry = expiry.replace("/", "-").replace(".", "-")  # Replace slashes/dots with hyphens
+        expiry = expiry.replace("/", "-").replace(".", "-").replace("'","").replace('"','')  # Replace slashes/dots with hyphens
         if expiry:
             expiry_parts = expiry.split("-")
             if len(expiry_parts) == 3:
