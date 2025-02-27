@@ -865,7 +865,7 @@ document.getElementById("searchInput").addEventListener("focus", function () {
                             <td>${product[0]}</td>
                             <td>${product[1]}</td>
                             <td>${product[2]}</td>
-                            <td>${product[4]}</td>
+                            <td>${parseFloat(product[4]).toFixed(2)}</td>
                             <td>
                                 ${product[5] == 0 
                                     ? `<button type="button" class="notify-button" style="font-size:large; background-color: #f44336; color: #fff;" onclick="sendNotifyRequest('${product[0]}', '${product[1]}', '${product[2]}')">Notify</button>`
