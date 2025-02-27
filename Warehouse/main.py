@@ -180,14 +180,19 @@ def load_products():
     """Load products from PRODUCTS_FILE, return as a dictionary, removing empty categories."""
     if os.path.exists(PRODUCTS_FILE):
         if os.path.getsize(PRODUCTS_FILE) == 0:
-            return {}  # Return empty dictionary if file is empty
+            print("⚠️ Warning: Products file is empty. Returning an empty list.")
+            return {}  # File is empty, return empty dictionary
+
         try:
             with open(PRODUCTS_FILE, 'r') as f:
-                products = json.load(f)
-            return {category: items for category, items in products.items() if items}
-        except json.JSONDecodeError:
-            print("Error: JSON file is corrupted. Returning an empty product list.")
+                data = f.read()
+                print("📂 Raw Data Read from JSON File:", data)  # Debugging
+                products = json.loads(data)  # ✅ Load properly
+            return {category: items for category, items in products.items() if items}  # Remove empty categories
+        except json.JSONDecodeError as e:
+            print(f"❌ Error: JSON file is corrupted! {e}")
             return {}
+    print("⚠️ Warning: Products file does not exist.")
     return {}
 
 
@@ -318,51 +323,66 @@ def index():
 
     # Handle Product Addition
     if request.method == 'POST':
-        # Strip spaces at the beginning and end for name, category, and supplier
         name = request.form['name'].strip() if request.form['name'] else ''
         category = request.form['category2'].strip() if request.form['category2'] else ''
         supplier = request.form['supplier'].strip() if request.form['supplier'] else ''
-    
-        # Ensure cost price, selling price, and quantity have proper fallback values
-        cost_price = request.form['cost_price'].strip() if request.form['cost_price'] else ''
-        selling_price = request.form['selling_price'].strip() if request.form['selling_price'] else ''
-        quantity = request.form['quantity'].strip() if request.form['quantity'] else ''
 
-        # Handle expiry input (strip spaces and make sure format is consistent)
+        cost_price = request.form['cost_price'].strip() if request.form['cost_price'] else '0'
+        selling_price = request.form['selling_price'].strip() if request.form['selling_price'] else '0'
+        quantity = request.form['quantity'].strip() if request.form['quantity'] else '0'
         expiry = request.form['expiry'].strip() if request.form['expiry'] else ''
-        expiry = expiry.replace("/", "-").replace(".", "-")  # Replace slashes/dots with hyphens
 
-        # Ensure expiry format is DD-MM-YYYY (can add further validation here)
-        if len(expiry) == 10:  # Basic check to make sure expiry is in the format 'DD-MM-YYYY'
+        # 🔍 Debugging: Print the received form data
+        print(f"📩 Received Product Data: Name={name}, Category={category}, Cost={cost_price}, Selling={selling_price}, Quantity={quantity}, Expiry={expiry}")
+
+        # ✅ Validate numeric fields
+        try:
+            cost_price = float(cost_price)
+            selling_price = float(selling_price)
+            quantity = int(quantity)
+        except ValueError:
+            print("❌ Error: Cost Price, Selling Price, or Quantity is invalid")
+            return "Invalid numerical values", 400
+
+        # ✅ Ensure expiry date format is consistent
+        expiry = expiry.replace("/", "-").replace(".", "-")  # Replace slashes/dots with hyphens
+        if expiry:
             expiry_parts = expiry.split("-")
             if len(expiry_parts) == 3:
-                # Validate month and day if necessary, or just let the user proceed
                 expiry = "-".join([expiry_parts[0].zfill(2), expiry_parts[1].zfill(2), expiry_parts[2]])
+            else:
+                print("⚠️ Warning: Invalid expiry format")
+                expiry = ""
+
+        # ✅ Ensure category exists in dictionary before adding the product
+        if category not in products:
+            products[category] = []
 
         # Assign a new product ID
         product_id = sum(len(items) for items in products.values()) + 1
 
-        # Image handling
+        # ✅ Image handling
         file = request.files['image']
+        filename = None  # Default
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             image_path = os.path.join(app.config['IMAGE_FOLDER'], filename)
             file.save(image_path)
-        else:
-            filename = None
 
-        # Create the product record
+        # ✅ Create the product list entry
         product = [product_id, name, category, cost_price, selling_price, quantity, filename, supplier, expiry]
+        print(f"📦 Adding Product: {product}")  # Debugging
 
-        # Add the product to the correct category in the products dictionary
-        if category not in products:
-            products[category] = []
+        # ✅ Add product to the correct category
         products[category].append(product)
 
-        # Save updated products list to file
-        save_products(products)
+        # ✅ Try saving to file
+        try:
+            save_products(products)
+            print("✅ Successfully saved products.")
+        except Exception as e:
+            print(f"❌ Error saving products: {e}")
 
-        # Redirect to index page
         return redirect(url_for('index'))
 
 
