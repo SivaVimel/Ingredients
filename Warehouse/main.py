@@ -208,12 +208,11 @@ def save_products(products):
     """Save products dictionary to PRODUCTS_FILE."""
     with open(PRODUCTS_FILE, 'w') as f:
         json.dump(products, f, indent=4)
-
 @app.route('/edit', methods=['POST'])
 def edit_product():
-    products = load_products()
-    product_id = int(request.form['id'])
-    updated_name = sanitize_input(request.form['name'].strip())
+    products = load_products()  # Load the current products
+    product_id = int(request.form['id'])  # Get the product ID from the form
+    updated_name = sanitize_input(request.form['name'].strip())  # Sanitize and get updated details
     updated_category = sanitize_input(request.form['category'].strip())
     updated_cost_price = request.form['cost_price']
     updated_selling_price = request.form['selling_price']
@@ -226,49 +225,53 @@ def edit_product():
 
     image = request.files.get('image')  # Get the image file
 
-    old_category = None
-    product_to_move = None
+    product_to_update = None  # Initialize the product to be updated
+    old_category = None  # To track the old category of the product
 
-    # Locate the product and remove it from its old category
+    # Locate and remove the product from its old category
     for category, items in products.items():
         for product in items:
             if product[0] == product_id:  # Match by Product ID
                 old_category = category
-                product_to_move = product  # Save product details
+                product_to_update = product  # Store the product to update
                 break
-        if product_to_move:
-            products[category].remove(product_to_move)  # Remove from old category
-            break  # Exit loop after finding the product
+        if product_to_update:
+            products[category].remove(product_to_update)  # Remove it from old category
+            break  # Exit loop once the product is found and removed
 
-    if product_to_move:
+    # If product was found, update it
+    if product_to_update:
         # Update product details
-        product_to_move[1] = updated_name
-        product_to_move[2] = updated_category
-        product_to_move[3] = updated_cost_price
-        product_to_move[4] = updated_selling_price
-        product_to_move[5] = updated_quantity
-        product_to_move[7] = updated_supplier
-        product_to_move[8] = updated_expiry
+        product_to_update[1] = updated_name
+        product_to_update[2] = updated_category
+        product_to_update[3] = updated_cost_price
+        product_to_update[4] = updated_selling_price
+        product_to_update[5] = updated_quantity
+        product_to_update[7] = updated_supplier
+        product_to_update[8] = updated_expiry
 
-        # Handle image update
+        # Handle image update if new image is uploaded
         if image and image.filename:
             filename = secure_filename(image.filename)
-            image_path = os.path.join("static", filename)
-            image.save(image_path)
-            product_to_move[6] = filename  # Update image filename in product details
+            image_path = os.path.join("static", filename)  # Save path for image
+            image.save(image_path)  # Save the image
+            product_to_update[6] = filename  # Update image filename in product details
 
-        # If the new category doesn't exist, create it
+        # Ensure the category exists, and add the updated product
         if updated_category not in products:
             products[updated_category] = []
 
-        # Add the product to the new category
-        products[updated_category].append(product_to_move)
+        # Add the updated product back to the new category
+        products[updated_category].append(product_to_update)
 
-    # Save updated products back to the file
-    save_products(products)
+        # Save updated products back to the file
+        save_products(products)
+
+        print(f"✅ Product {product_id} successfully updated.")
+    else:
+        print(f"❌ Error: Product with ID {product_id} not found!")
+
     return redirect(url_for('index'))
-
-
 
 @app.route('/delete', methods=['POST'])
 def delete_product():
