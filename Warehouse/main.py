@@ -227,27 +227,31 @@ def edit_product():
     updated_expiry = updated_expiry.replace("/", "-").replace(".", "-").replace("'", "").replace('"', '')
 
     image = request.files.get('image')  # Get image file (if updated)
+    existing_image = None  # Store the existing image filename
 
-    # Step 1: Remove old product completely
+    # Step 1: Remove old product and store the existing image filename
     for category, items in products.items():
-        products[category] = [product for product in items if product[0] != product_id]  # Remove by ID
+        for product in items:
+            if product[0] == product_id:  # Match by ID
+                existing_image = product[6]  # Get old image filename
+                break
+        products[category] = [product for product in items if product[0] != product_id]  # Remove old product
 
-    # Step 2: Update product details
-    updated_product = [
-        product_id, updated_name, updated_category, updated_cost_price,
-        updated_selling_price, updated_quantity, None, updated_supplier, updated_expiry
-    ]
-
-    # Step 3: Handle image update
-    if image and image.filename:
-        filename = secure_filename(image.filename)
+    # Step 2: Handle image update logic
+    if image and image.filename:  
+        filename = secure_filename(image.filename)  # Save new image
         image_path = os.path.join("static", filename)
         image.save(image_path)
-        updated_product[6] = filename  # Assign new image filename
     else:
-        updated_product[6] = None  # Keep existing image (if necessary, modify this logic)
+        filename = existing_image  # Keep existing image if no new one is uploaded
 
-    # Step 4: Add updated product to new category
+    # Step 3: Create updated product list
+    updated_product = [
+        product_id, updated_name, updated_category, updated_cost_price,
+        updated_selling_price, updated_quantity, filename, updated_supplier, updated_expiry
+    ]
+
+    # Step 4: Add updated product to the new category
     if updated_category not in products:
         products[updated_category] = []
     products[updated_category].append(updated_product)
@@ -255,7 +259,7 @@ def edit_product():
     # Step 5: Save updated products back to file
     save_products(products)
 
-    print(f"✅ Product {product_id} updated and reassigned to {updated_category}.")
+    print(f"✅ Product {product_id} updated with image: {filename}")
     return redirect(url_for('index'))
 
 
