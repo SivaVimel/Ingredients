@@ -122,7 +122,10 @@ def get_top_clients():
                 continue
             
             client = details[0]  # Client name
-            quantity = int(details[1])  # Order quantity
+            try:
+                quantity = int(details[1])  # Order quantity
+            except:
+                quantity = float(details[1])  # Order quantity
             
             client_orders[client] += quantity  # Aggregate orders
 
@@ -496,12 +499,20 @@ def chat1():
 
     for category, items in products.items():
         for product in items:
-            if int(product[5]) == 0:  # Check if quantity is 0
-                   out_of_stock.append({
-                    "id": product[0],
-                       "name": product[1],
-                       "category": product[2]
-                   })
+            try:
+                if int(product[5]) == 0:  # Check if quantity is 0
+                       out_of_stock.append({
+                        "id": product[0],
+                           "name": product[1],
+                           "category": product[2]
+                       })
+            except:
+                if float(product[5]) == 0:  # Check if quantity is 0
+                       out_of_stock.append({
+                        "id": product[0],
+                           "name": product[1],
+                           "category": product[2]
+                       })
     avail_stock = []
 
     for category, items in products.items():
@@ -559,12 +570,20 @@ def chat():
 
     for category, items in products.items():
         for product in items:
-            if int(product[5]) == 0:  # Check if quantity is 0
-                   out_of_stock.append({
-                    "id": product[0],
-                       "name": product[1],
-                       "category": product[2]
-                   })
+            try:
+                if int(product[5]) == 0:  # Check if quantity is 0
+                       out_of_stock.append({
+                        "id": product[0],
+                           "name": product[1],
+                           "category": product[2]
+                       })
+            except:
+                if float(product[5]) == 0:  # Check if quantity is 0
+                       out_of_stock.append({
+                        "id": product[0],
+                           "name": product[1],
+                           "category": product[2]
+                       })
     avail_stock = []
 
     for category, items in products.items():
@@ -819,7 +838,10 @@ def submit_cart():
         for category, items in products.items():
             for product in items:
                 if product[0] == product_id:
-                    available_quantity = int(product[5])  # Available stock
+                    try:
+                        available_quantity = int(product[5])  # Available stock
+                    except:
+                        available_quantity = float(product[5])  # Available stock
 
                     if available_quantity == 0:
                         insufficient_stock.append(f"{product[1]} (Out of stock)")
@@ -856,7 +878,10 @@ def submit_cart():
 def update_cart():
     data = request.get_json()
     product_id = int(data['id'])
-    quantity = int(data['order_quantity'])
+    try:
+        quantity = int(data['order_quantity'])
+    except:
+        quantity = float(data['order_quantity'])
     message = data['order_Message']
 
     updated_cart = []
@@ -889,15 +914,24 @@ def view_cart():
 
     for item in cart_items:
         product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
-        
-        if product and int(product[5]) > 0:  # Check if stock is > 0
-            cart_details.append({
-                'product_id': item['product_id'],
-                'name': product[1],
-                'quantity': item['quantity'],
-                'message': item['message']
-            })
-            updated_cart.append(item)  # Keep product in cart
+        try:
+            if product and int(product[5]) > 0:  # Check if stock is > 0
+                cart_details.append({
+                    'product_id': item['product_id'],
+                    'name': product[1],
+                    'quantity': item['quantity'],
+                    'message': item['message']
+                })
+                updated_cart.append(item)  # Keep product in cart
+        except:
+            if product and float(product[5]) > 0:  # Check if stock is > 0
+                cart_details.append({
+                    'product_id': item['product_id'],
+                    'name': product[1],
+                    'quantity': item['quantity'],
+                    'message': item['message']
+                })
+                updated_cart.append(item)  # Keep product in cart
 
     session['cart'] = updated_cart  # Remove out-of-stock items
     session.modified = True
@@ -910,7 +944,10 @@ def add_to_cart():
     username = session.get("username", "Guest")
     data = request.get_json()
     product_id = int(data['id'])
-    quantity = int(data['order_quantity'])
+    try:
+        quantity = int(data['order_quantity'])
+    except:
+        quantity = float(data['order_quantity'])
     message = data['order_Message']
     productName = data['product_name']
     productCat = data['product_cat']
@@ -947,6 +984,10 @@ def delete_order2():
     data = request.get_json()
     product_id = int(data['productId'])
     order_quantity = int(data['orderQuantity'])
+    try:
+        order_quantity = int(data['orderQuantity'])
+    except:
+        order_quantity = float(data['orderQuantity'])
 
     # Load orders
     if os.path.exists("data/Orders.txt"):
@@ -970,7 +1011,10 @@ def delete_order2():
     for category, items in products.items():
         for product in items:
             if int(product[0]) == product_id:
-                product_quantity = int(product[5]) + order_quantity
+                try:
+                    product_quantity = int(product[5]) + order_quantity
+                except:
+                    product_quantity = float(product[5]) + order_quantity
                 product[5] = str(product_quantity)  # Update the quantity
                 
                 # Save updated products
@@ -1013,12 +1057,20 @@ def get_out_of_stock_products():
 
         for category, items in products.items():
             for product in items:
-                if int(product[5]) == 0:  # Check if quantity is 0
-                    out_of_stock.append({
-                        "id": product[0],
-                        "name": product[1],
-                        "category": product[2]
-                    })
+                try:
+                    if int(product[5]) == 0:  # Check if quantity is 0
+                        out_of_stock.append({
+                            "id": product[0],
+                            "name": product[1],
+                            "category": product[2]
+                        })
+                except:
+                    if float(product[5]) == 0:  # Check if quantity is 0
+                        out_of_stock.append({
+                            "id": product[0],
+                            "name": product[1],
+                            "category": product[2]
+                        })
 
         return jsonify({"products": out_of_stock})
     except Exception as e:
@@ -1094,7 +1146,10 @@ def place_order():
         )
 
     product_id = int(product_id)
-    order_quantity = int(order_quantity)
+    try:
+        order_quantity = int(order_quantity)
+    except:
+        order_quantity = float(order_quantity)
 
     # If user is not logged in, return error
     if not username or username == "Guest":
@@ -1119,7 +1174,10 @@ def place_order():
     for category, items in products.items():
         for product in items:
             if product[0] == product_id:
-                available_quantity = int(product[5])  # Quantity is at index 5
+                try:
+                    available_quantity = int(product[5])  # Quantity is at index 5
+                except:
+                    available_quantity = float(product[5])  # Quantity is at index 5
                 if order_quantity > available_quantity:
                     return render_template(
                         "client.html",
