@@ -983,7 +983,6 @@ def add_to_cart():
 def delete_order2():
     data = request.get_json()
     product_id = int(data['productId'])
-    order_quantity = int(data['orderQuantity'])
     try:
         order_quantity = int(data['orderQuantity'])
     except:
