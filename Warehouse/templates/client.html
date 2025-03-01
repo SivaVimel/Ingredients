@@ -565,9 +565,6 @@ window.onload = function() {
             <p id="loginError" style="color: red; display: none;">Invalid credentials. Please try again.</p>
         </div></center>
     </div>
-    
-    <div id="pageContent">
-        <!-- Fixed header -->
         <div class="header">
             <div>
                 <div style="margin-left:15px;">
@@ -580,9 +577,13 @@ window.onload = function() {
                     <div id="cart-content">
                         <button onclick="closeCart()" style="float: right; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 5px;">X</button>
                         <h2>Your Cart</h2>
-                        <div style="position: relative;">
+                        <div style="position: relative; cursor: pointer; justify-content: left;">
                             🛒 Cart <span id="cart-counter" style="background: red; color: white; border-radius: 50%; padding: 5px 10px; font-size: 14px; display: none;">0</span>
-                        </div>                        
+                            <button onclick="clearCart()" style=" background-color:transparent; color: white; border: none; margin: 5px 0;">🗑Clear</button>
+                            <button onclick="removeOutOfStock()" style="background-color:transparent;  color: white; border: none; margin: 5px 0;">🚫Remove OF-Stocks</button>
+                            <button onclick="adjustOutOfStock()" style="background-color:transparent; color: white; border: none; margin: 5px 0;">✔Adjust OF-Quantity</button>
+        
+                        </div>                      
                         <table id="cart-table">
                             <thead>
                                 <tr>
@@ -1083,7 +1084,7 @@ function viewCart() {
         let cartCounter = document.getElementById("cart-counter"); 
         cartTable.innerHTML = '';  // Clear the cart table
 
-        let totalItems = 0;
+        let uniqueProductNames = new Set();  // Store unique product names
 
         cartItems.forEach(item => {
             let row = document.createElement("tr");
@@ -1095,16 +1096,17 @@ function viewCart() {
             `;
             cartTable.appendChild(row);
 
-            totalItems += parseInt(item.quantity);  // Count total quantity
+            uniqueProductNames.add(item.name);  // Add product name to Set
         });
 
-        // Update cart counter
-        cartCounter.innerText = totalItems;
-        cartCounter.style.display = totalItems > 0 ? "inline-block" : "none";
+        // Update cart counter with unique product count
+        cartCounter.innerText = uniqueProductNames.size;
+        cartCounter.style.display = uniqueProductNames.size > 0 ? "inline-block" : "none";
 
         document.getElementById("cart-content").style.display = 'block';
     });
 }
+
 
 function updateCartItem(productId) {
     const quantity = document.getElementById(`edit-quantity-${productId}`).value;
@@ -1145,6 +1147,48 @@ function submitCart() {
     });
 }
 
+// Show cart popup when cart is clicked
+function showCartPopup() {
+    document.getElementById("cart-popup").style.display = "block";
+}
+
+// Close the cart popup
+function closeCartPopup() {
+    document.getElementById("cart-popup").style.display = "none";
+}
+
+// Clear all items from cart
+function clearCart() {
+    fetch('/clear-cart', { method: 'POST' })
+    .then(response => response.json())
+    .then(result => {
+        alert(result.message);
+        closeCartPopup();
+        viewCart();  // Refresh cart view
+    });
+}
+
+// Remove only out-of-stock items
+function removeOutOfStock() {
+    fetch('/remove-out-of-stock', { method: 'POST' })
+    .then(response => response.json())
+    .then(result => {
+        alert(result.message);
+        viewCart();  // Refresh cart view after updating session
+    });
+}
+
+
+// Adjust out-of-stock items to max available
+function adjustOutOfStock() {
+    fetch('/adjust-out-of-stock', { method: 'POST' })
+    .then(response => response.json())
+    .then(result => {
+        alert(result.message);
+        closeCartPopup();
+        viewCart();  // Refresh cart view
+    });
+}
 
 
         function sendNotifyRequest(productId, productName, productCategory) {
