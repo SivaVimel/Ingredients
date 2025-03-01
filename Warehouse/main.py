@@ -799,6 +799,67 @@ def get_message751():
 
     return jsonify({'success': True, 'message': message})
 
+@app.route('/clear-cart', methods=['POST'])
+def clear_cart():
+    session.pop('cart', None)  # Remove all items from cart
+    session.modified = True
+    return jsonify({'success': True, 'message': 'Cart has been cleared!'})
+
+@app.route('/remove-out-of-stock', methods=['POST'])
+def remove_out_of_stock():
+    if 'cart' not in session:
+        return jsonify({'success': False, 'message': 'Cart is empty'})
+
+    products = load_products()  # Load product data
+    updated_cart = []  # Store only valid items
+    removed_items = []  # Track removed items
+
+    for item in session['cart']:
+        product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
+
+        try:
+            available_quantity = int(product[5])
+        except:
+            available_quantity = float(product[5])
+
+        if product and available_quantity > 0:
+            updated_cart.append(item)  # Keep in cart if available
+        else:
+            removed_items.append(product[1])  # Store removed item name
+
+    session['cart'] = updated_cart
+    session.modified = True
+
+    if removed_items:
+        return jsonify({'success': True, 'message': f"Removed out-of-stock items: {', '.join(removed_items)}"})
+    else:
+        return jsonify({'success': False, 'message': 'No out-of-stock items found.'})
+
+
+@app.route('/adjust-out-of-stock', methods=['POST'])
+def adjust_out_of_stock():
+    if 'cart' not in session:
+        return jsonify({'success': False, 'message': 'Cart is empty!'})
+
+    products = load_products()
+    adjusted_cart = []
+
+    for item in session['cart']:
+        product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
+        try:
+            available_stock = int(product[5]) if product else 0
+        except:
+            available_stock = float(product[5]) if product else 0
+
+        if available_stock > 0:
+            item['quantity'] = min(item['quantity'], available_stock)  # Set to max available
+            adjusted_cart.append(item)
+
+    session['cart'] = adjusted_cart
+    session.modified = True
+    return jsonify({'success': True, 'message': 'Cart updated with available stock!'})
+
+
 @app.route('/save-message', methods=['POST'])
 def save_message751():
     data = request.json
