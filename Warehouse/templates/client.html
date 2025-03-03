@@ -674,7 +674,7 @@ window.onload = function() {
                         <td>{{ order[3] }}</td>
                         <td>{{ order[4] }}</td>
                         <td>{{ order[2] }}</td>
-                        <td><button class="delete-button" onclick="deleteOrder('{{ order[1] }}', '{{ order[2] }}')">Delete</button></td> <!-- Delete button -->
+                        <td><button class="delete-button" onclick="deleteOrder('{{ order[1] }}', '{{ order[2] }}')">Cancel</button></td> <!-- Delete button -->
                     </tr>
                 {% endfor %}
             </tbody>
@@ -842,7 +842,7 @@ document.getElementById("searchInput").addEventListener("focus", function () {
 
     function renderProductsByCategory(category, products) {
     let container = document.getElementById("categories");
-
+    products.sort((a, b) => a[1].localeCompare(b[1]));
     let categoryDiv = document.createElement("div");
     categoryDiv.className = "category-section";
     categoryDiv.id = `category-${category}`;
@@ -1083,20 +1083,19 @@ function viewCart() {
         let cartTable = document.getElementById("cart-tbody");
         let cartCounter = document.getElementById("cart-counter"); 
         cartTable.innerHTML = '';  // Clear the cart table
-
         let uniqueProductNames = new Set();  // Store unique product names
 
         cartItems.forEach(item => {
             let row = document.createElement("tr");
             row.innerHTML = `
-                <td>${item.name}</td>
+                <td>${item.product_name}</td>
                 <td><input style="width:80%;" type="number" value="${item.quantity}" id="edit-quantity-${item.product_id}" min="1"></td>
                 <td><input style="width:80%;" type="text" value="${item.message}" id="edit-message-${item.product_id}"></td>
                 <td><button style="border: none; border-radius: 5px; width: 100%; font-size: medium; padding: 10px; margin-top: 10px; cursor: pointer;" onclick="updateCartItem(${item.product_id})">Update</button></td>
             `;
             cartTable.appendChild(row);
 
-            uniqueProductNames.add(item.name);  // Add product name to Set
+            uniqueProductNames.add(item.product_name);  // Add product name to Set
         });
 
         // Update cart counter with unique product count
@@ -1269,6 +1268,7 @@ async function login() {
         loginError.style.display = "block";
         loginError.textContent = "An error occurred. Please try again.";
     }
+    window.location.reload();
 }
 
     </script>
