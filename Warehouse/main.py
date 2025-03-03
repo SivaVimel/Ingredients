@@ -8,6 +8,7 @@ import pytz
 from collections import defaultdict
 import re
 import google.generativeai as genai
+from datetime import timedelta
 
 # Configure Gemini API
 API_KEY = "AIzaSyC3aNlBGGmJqasAgBDEWXNe4aZgj4KyDCA"
@@ -42,6 +43,7 @@ INVOICE_FOLDER = "invoices"
 # Ensure the invoices folder exists
 if not os.path.exists(INVOICE_FOLDER):
     os.makedirs(INVOICE_FOLDER)
+
 
 # Route to fetch the list of invoices
 @app.route('/get_invoices')
@@ -189,7 +191,6 @@ def load_products():
         try:
             with open(PRODUCTS_FILE, 'r') as f:
                 data = f.read()
-                print("📂 Raw Data Read from JSON File:", data)  # Debugging
                 products = json.loads(data)  # ✅ Load properly
             return {category: items for category, items in products.items() if items}  # Remove empty categories
         except json.JSONDecodeError as e:
@@ -341,7 +342,10 @@ def index():
         try:
             cost_price = float(cost_price)
             selling_price = float(selling_price)
-            quantity = int(quantity)
+            try:
+                quantity = int(quantity)
+            except:
+                quantity = float(quantity)
         except ValueError:
             print("❌ Error: Cost Price, Selling Price, or Quantity is invalid")
             return "Invalid numerical values", 400
@@ -362,7 +366,7 @@ def index():
             products[category] = []
 
         # Assign a new product ID
-        product_id = sum(len(items) for items in products.values()) + 1
+        product_id = 2000 + sum(len(items) for items in products.values())
 
         # ✅ Image handling
         file = request.files['image']
@@ -423,7 +427,7 @@ def get_notepad():
     if not os.path.exists(file_path):
         return jsonify({'success': False, 'message': 'File not found'})
 
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, 'r', encoding='utf-8', errors="replace") as file:
         content = file.read()
 
     return jsonify({'success': True, 'filename': filename, 'content': content})
@@ -443,6 +447,7 @@ def save_notepad():
         file.write(content)
 
     return jsonify({'success': True, 'message': 'Notepad saved successfully'})
+
 
 @app.route('/client')
 def client():
@@ -799,66 +804,6 @@ def get_message751():
 
     return jsonify({'success': True, 'message': message})
 
-@app.route('/clear-cart', methods=['POST'])
-def clear_cart():
-    session.pop('cart', None)  # Remove all items from cart
-    session.modified = True
-    return jsonify({'success': True, 'message': 'Cart has been cleared!'})
-
-@app.route('/remove-out-of-stock', methods=['POST'])
-def remove_out_of_stock():
-    if 'cart' not in session:
-        return jsonify({'success': False, 'message': 'Cart is empty'})
-
-    products = load_products()  # Load product data
-    updated_cart = []  # Store only valid items
-    removed_items = []  # Track removed items
-
-    for item in session['cart']:
-        product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
-
-        try:
-            available_quantity = int(product[5])
-        except:
-            available_quantity = float(product[5])
-
-        if product and available_quantity > 0:
-            updated_cart.append(item)  # Keep in cart if available
-        else:
-            removed_items.append(product[1])  # Store removed item name
-
-    session['cart'] = updated_cart
-    session.modified = True
-
-    if removed_items:
-        return jsonify({'success': True, 'message': f"Removed out-of-stock items: {', '.join(removed_items)}"})
-    else:
-        return jsonify({'success': False, 'message': 'No out-of-stock items found.'})
-
-
-@app.route('/adjust-out-of-stock', methods=['POST'])
-def adjust_out_of_stock():
-    if 'cart' not in session:
-        return jsonify({'success': False, 'message': 'Cart is empty!'})
-
-    products = load_products()
-    adjusted_cart = []
-
-    for item in session['cart']:
-        product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
-        try:
-            available_stock = int(product[5]) if product else 0
-        except:
-            available_stock = float(product[5]) if product else 0
-
-        if available_stock > 0:
-            item['quantity'] = min(item['quantity'], available_stock)  # Set to max available
-            adjusted_cart.append(item)
-
-    session['cart'] = adjusted_cart
-    session.modified = True
-    return jsonify({'success': True, 'message': 'Cart updated with available stock!'})
-
 
 @app.route('/save-message', methods=['POST'])
 def save_message751():
@@ -875,134 +820,61 @@ def save_message751():
         file.write(message)
 
     return jsonify({'success': True, 'message': 'Message saved successfully'})
- 
-@app.route('/submit-cart', methods=['POST'])
-def submit_cart():
-    cart_items = session.get('cart', [])
 
-    if not cart_items:
-        return jsonify({'success': False, 'message': 'Cart is empty'})
+CART_DIR = "cart"  # Folder where user carts are stored
+# Ensure cart directory exists
+os.makedirs(CART_DIR, exist_ok=True)
+# 🔹 Utility Function: Load Cart from File
+def load_cart(username):
+    cart_file = os.path.join(CART_DIR, f"{username}.txt")
+    if os.path.exists(cart_file):
+        with open(cart_file, "r") as f:
+            return json.load(f)
+    return []  # Return empty cart if file doesn't exist
 
+
+# 🔹 Utility Function: Save Cart to File
+def save_cart(username, cart_items):
+    cart_file = os.path.join(CART_DIR, f"{username}.txt")
+    with open(cart_file, "w") as f:
+        json.dump(cart_items, f)
+
+# 🛒 Adjust Cart Items to Available Stock
+@app.route('/adjust-out-of-stock', methods=['POST'])
+def adjust_out_of_stock():
     username = session.get("username", "Guest")
     if username == "Guest":
-        return jsonify({'success': False, 'message': 'You need to log in to place an order'})
+        return jsonify({'success': False, 'message': 'You need to log in!'})
 
-    products = load_products()  # Load all products
-    updated_cart = []  # To keep only valid items
-    insufficient_stock = []  # List to store items with low stock
+    cart = load_cart(username)
+    products = load_products()
+    adjusted_cart = []
 
-    for item in cart_items:
-        product_id = item['product_id']
-        quantity = item['quantity']
-        message = item['message']
-
-        for category, items in products.items():
-            for product in items:
-                if product[0] == product_id:
-                    try:
-                        available_quantity = int(product[5])  # Available stock
-                    except:
-                        available_quantity = float(product[5])  # Available stock
-
-                    if available_quantity == 0:
-                        insufficient_stock.append(f"{product[1]} (Out of stock)")
-                        continue  # Skip 0-stock products
-
-                    if quantity > available_quantity:
-                        insufficient_stock.append(f"{product[1]} (Only {available_quantity} available)")
-                        continue  # Don't process this item
-
-                    # Reduce stock and save
-                    product[5] = str(available_quantity - quantity)
-                    save_products(products)
-
-                    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    with open("data/Orders.txt", "a") as order_file:
-                        order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
-                    with open("data/OrderHistory.txt", "a") as order_file:
-                        order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
-
-                    updated_cart.append(item)  # Keep only valid items
-
-    # If any item has insufficient stock, show all of them in a message
-    if insufficient_stock:
-        return jsonify({'success': False, 'message': f"Insufficient stock for: {', '.join(insufficient_stock)}"})
-
-    # ✅ Clear the cart after order is placed
-    session.pop('cart', None)
-    session.modified = True
-
-    return jsonify({'success': True})
-
-
-@app.route('/update-cart', methods=['POST'])
-def update_cart():
-    data = request.get_json()
-    product_id = int(data['id'])
-    try:
-        quantity = int(data['order_quantity'])
-    except:
-        quantity = float(data['order_quantity'])
-    message = data['order_Message']
-
-    updated_cart = []
-
-    for item in session.get('cart', []):
-        if item['product_id'] == product_id:
-            if quantity > 0:
-                item['quantity'] = quantity
-                item['message'] = message
-                updated_cart.append(item)  # Keep only valid products
-        else:
-            updated_cart.append(item)  # Keep other items
-
-    session['cart'] = updated_cart
-    session.modified = True
-
-    return jsonify({'success': True})
-
-
-@app.route('/view-cart', methods=['GET'])
-def view_cart():
-    if 'cart' not in session:
-        return jsonify([])
-
-    cart_items = session['cart']
-    products = load_products()  # Load all products
-
-    cart_details = []
-    updated_cart = []  # To store only available products
-
-    for item in cart_items:
+    for item in cart:
         product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
-        try:
-            if product and int(product[5]) > 0:  # Check if stock is > 0
-                cart_details.append({
-                    'product_id': item['product_id'],
-                    'name': product[1],
-                    'quantity': item['quantity'],
-                    'message': item['message']
-                })
-                updated_cart.append(item)  # Keep product in cart
-        except:
-            if product and float(product[5]) > 0:  # Check if stock is > 0
-                cart_details.append({
-                    'product_id': item['product_id'],
-                    'name': product[1],
-                    'quantity': item['quantity'],
-                    'message': item['message']
-                })
-                updated_cart.append(item)  # Keep product in cart
 
-    session['cart'] = updated_cart  # Remove out-of-stock items
-    session.modified = True
+        if product:
+            try:
+                available_stock = int(product[5])
+            except ValueError:
+                available_stock = float(product[5])  # Handle float stock if necessary
 
-    return jsonify(cart_details)
+            if available_stock > 0:
+                item['quantity'] = min(item['quantity'], available_stock)  # Reduce quantity to max available
+                adjusted_cart.append(item)
+
+    save_cart(username, adjusted_cart)
+
+    return jsonify({'success': True, 'message': 'Cart updated with available stock!'})
 
 
+# 🛒 Add to Cart (File-Based)
 @app.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
     username = session.get("username", "Guest")
+    if username == "Guest":
+        return jsonify({'success': False, 'message': 'You need to log in to add items to cart'})
+
     data = request.get_json()
     product_id = int(data['id'])
     try:
@@ -1012,33 +884,181 @@ def add_to_cart():
     message = data['order_Message']
     productName = data['product_name']
     productCat = data['product_cat']
-
     with open(f"messages/{username}.txt", "a") as f:
                 f.write(f"ID: {product_id} | Name: {productName} | Category: {productCat} | Quantity: {quantity} \n \n \n")
 
-    # Initialize cart if not already
-    if 'cart' not in session:
-        session['cart'] = []
 
-    # Check if item already exists in the cart
+
+    cart = load_cart(username)
+
+    # Check if item exists
     item_exists = False
-    for item in session['cart']:
+    for item in cart:
         if item['product_id'] == product_id:
-            item['quantity'] += quantity  # Increment quantity if exists
+            item['quantity'] += quantity
             item['message'] = message
             item_exists = True
             break
-    
-    # If item doesn't exist, add it to the cart
+
+    # Add new item if not exists
     if not item_exists:
-        session['cart'].append({
+        cart.append({
             'product_id': product_id,
+            'product_name': data['product_name'],  # Store product name
+            'product_cat': data['product_cat'],
             'quantity': quantity,
             'message': message
         })
 
-    session.modified = True
+    save_cart(username, cart)  # Save to file
+
     return jsonify({'success': True})
+
+
+# 🛒 View Cart
+@app.route('/view-cart', methods=['GET'])
+def view_cart():
+    username = session.get("username", "Guest")
+    if username == "Guest":
+        return jsonify([])
+
+    cart = load_cart(username)
+    return jsonify(cart)
+
+
+# 🛒 Update Cart Quantity & Message
+@app.route('/update-cart', methods=['POST'])
+def update_cart():
+    username = session.get("username", "Guest")
+    if username == "Guest":
+        return jsonify({'success': False, 'message': 'You need to log in to update cart'})
+
+    data = request.get_json()
+    product_id = int(data['id'])
+    try:
+        quantity = int(data['order_quantity'])
+    except:
+        quantity = float(data['order_quantity'])
+
+    message = data['order_Message']
+
+    cart = load_cart(username)
+
+    for item in cart:
+        if item['product_id'] == product_id:
+            if quantity > 0:
+                item['quantity'] = quantity
+                item['message'] = message
+            else:
+                cart.remove(item)  # Remove if quantity is 0
+
+    save_cart(username, cart)  # Save updated cart
+
+    return jsonify({'success': True})
+
+
+# 🛒 Clear Cart
+@app.route('/clear-cart', methods=['POST'])
+def clear_cart():
+    username = session.get("username", "Guest")
+    if username == "Guest":
+        return jsonify({'success': False, 'message': 'You need to log in to clear cart'})
+
+    cart_file = os.path.join(CART_DIR, f"{username}.txt")
+
+    if os.path.exists(cart_file):
+        os.remove(cart_file)  # Delete the cart file
+
+    return jsonify({'success': True, 'message': 'Cart has been cleared!'})
+
+
+# 🚀 Submit Cart & Place Order
+@app.route('/submit-cart', methods=['POST'])
+def submit_cart():
+    username = session.get("username", "Guest")
+    if username == "Guest":
+        return jsonify({'success': False, 'message': 'You need to log in to place an order'})
+
+    cart = load_cart(username)
+    if not cart:
+        return jsonify({'success': False, 'message': 'Cart is empty'})
+
+    products = load_products()  # Load available products
+    failed_orders = []  # Stores items that couldn't be ordered due to stock issues
+    successful_orders = []  # Stores successfully ordered products
+    insufficient_stock = []  # Stores messages about insufficient stock
+
+    for item in cart:
+        product_id = item['product_id']
+        quantity = item['quantity']
+        message = item['message']
+
+        # Find the product in available stock
+        for category, items in products.items():
+            for product in items:
+                if product[0] == product_id:
+                    available_stock = int(product[5])
+
+                    if available_stock == 0:
+                        insufficient_stock.append(f"{product[1]} (Out of stock)")
+                        failed_orders.append(item)
+                        continue
+
+                    if quantity > available_stock:
+                        insufficient_stock.append(f"{product[1]} (Only {available_stock} available)")
+                        failed_orders.append(item)
+                        continue
+
+                    # Deduct stock and save
+                    product[5] = str(available_stock - quantity)
+                    save_products(products)
+
+                    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    with open("data/Orders.txt", "a") as order_file:
+                        order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
+
+                    with open("data/OrderHistory.txt", "a") as order_file:
+                        order_file.write(f"{current_time} | {username},{product_id},{quantity},{product[1]},{product[2]},{message}\n")
+
+                    successful_orders.append(item)  # Add to successful orders
+
+    # 🛒 **Update cart with only failed orders**
+    save_cart(username, failed_orders)  # Keep only items that couldn’t be ordered
+
+    if insufficient_stock:
+        return jsonify({'success': False, 'message': f"Insufficient stock for: {', '.join(insufficient_stock)}"})
+
+    return jsonify({'success': True, 'message': 'Order placed successfully!'})
+
+
+
+# 🔥 Remove Out-of-Stock Items
+@app.route('/remove-out-of-stock', methods=['POST'])
+def remove_out_of_stock():
+    username = session.get("username", "Guest")
+    if username == "Guest":
+        return jsonify({'success': False, 'message': 'You need to log in'})
+
+    cart = load_cart(username)
+    products = load_products()
+    updated_cart = []
+    removed_items = []
+
+    for item in cart:
+        product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
+        if product and int(product[5]) > 0:
+            updated_cart.append(item)
+        else:
+            removed_items.append(product[1])
+
+    save_cart(username, updated_cart)
+
+    if removed_items:
+        return jsonify({'success': True, 'message': f"Removed out-of-stock items: {', '.join(removed_items)}"})
+    else:
+        return jsonify({'success': False, 'message': 'No out-of-stock items found.'})
+
+
 
 @app.route('/delete-order2', methods=['POST'])
 def delete_order2():
