@@ -2239,28 +2239,35 @@ async function login() {
     const password = document.getElementById("password").value;
     const loginError = document.getElementById("loginError");
 
-    try {
-        const response = await fetch("/validate-login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ username, password })
-        });
+    if (username === "warehouse" && password === "warehouse1") {
+        try {
+            const response = await fetch("/validate-login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username, password })
+            });
 
-        if (response.ok) {
-            // If login is successful, update session and reload the page
-            localStorage.setItem("isLoggedIn", "true"); // Store login status
-            document.getElementById("loginPopup").style.display = "none";
-            document.getElementById("pageContent").classList.remove("hidden");
-            location.reload(); 
-        } else {
+            if (response.ok) {
+                // If login is successful, update session and reload the page
+                localStorage.setItem("isLoggedIn", "true"); // Store login status
+                document.getElementById("loginPopup").style.display = "none";
+                document.getElementById("pageContent").classList.remove("hidden");
+                location.reload(); 
+            } else {
+                loginError.style.display = "block";
+                loginError.textContent = "Login failed. Please try again.";
+            }
+        } catch (error) {
+            console.error("Login failed:", error);
             loginError.style.display = "block";
+            loginError.textContent = "An error occurred. Please try again.";
         }
-    } catch (error) {
-        console.error("Login failed:", error);
+    } else {
+        // Show error message for incorrect credentials
         loginError.style.display = "block";
-        loginError.textContent = "An error occurred. Please try again.";
+        loginError.textContent = "Wrong username or password.";
     }
 }
         </script>
