@@ -11,7 +11,7 @@ import google.generativeai as genai
 from datetime import timedelta
 
 # Configure Gemini API
-API_KEY = "AIzaSyC3aNlBGGmJqasAgBDEWXNe4aZgj4KyDCA"
+API_KEY = "ksjskjjabsjasksak"
 def configure_api_key(api_key):
     if not api_key:
         raise ValueError("Please provide your Gemini API key. Do not embed it in code!")
