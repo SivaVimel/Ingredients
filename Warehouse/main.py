@@ -245,7 +245,7 @@ def edit_product():
     # Step 2: Handle image update logic
     if image and image.filename:  
         filename = secure_filename(image.filename)  # Save new image
-        image_path = os.path.join("static", filename)
+        image_path = os.path.join("product_images", filename)
         image.save(image_path)
     else:
         filename = existing_image  # Keep existing image if no new one is uploaded
