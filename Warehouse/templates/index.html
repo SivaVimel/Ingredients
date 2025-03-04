@@ -1152,7 +1152,11 @@ function closeReportPopup() {
 
         function generatePDF() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+        orientation: "portrait", // Set to landscape for better table fit
+        unit: "pt", // Use points for precise scaling
+        format: "A4" // Standard A4 size
+    });
 
     // Get the table element
     const table = document.getElementById('ordersTable');
@@ -1182,14 +1186,19 @@ function closeReportPopup() {
             });
             data.push(rowData);
         }
+
     });
 
     // Use jsPDF's autoTable plugin to convert the filtered table into a PDF
     doc.autoTable({
         head: [headers],
         body: data,
-        startY: 20, // Adjust the starting Y position (optional)
-        theme: 'grid', // Optional: 'striped' or 'grid' for styling
+        startY: 20,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 4 }, // Set font size to 14
+        columnStyles: { 0: { cellWidth: 'auto' } }, 
+        margin: { left: 5, right: 5 }, // Reduce margins
+        tableWidth: 'auto',
     });
 
     // Save the PDF with a name (optional)
@@ -1201,16 +1210,26 @@ function closeReportPopup() {
 
 function generatePDF2() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "A4"
+    });
+
 
     // Get the table element
     const table = document.getElementById('historyTable');
 
     // Use jsPDF's autoTable plugin to convert the HTML table into a PDF
     doc.autoTable({
-        html: table,
-        startY: 20, // Adjust the starting Y position (optional)
-        theme: 'grid', // Optional: 'striped' or 'grid' for styling
+        head: [headers],
+        body: data,
+        startY: 20,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 4 }, // Set font size to 14
+        columnStyles: { 0: { cellWidth: 'auto' } }, 
+        margin: { left: 5, right: 5 }, // Reduce margins
+        tableWidth: 'auto',
     });
 
     // Save the PDF with a name (optional)
