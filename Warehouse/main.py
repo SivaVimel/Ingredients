@@ -11,7 +11,7 @@ import google.generativeai as genai
 from datetime import timedelta
 
 # Configure Gemini API
-API_KEY = "ksjskjjabsjasksak"
+API_KEY = "AIzaSyC3aNlBGGmJqasAgBDEWXNe4aZgj4KyDCA"
 def configure_api_key(api_key):
     if not api_key:
         raise ValueError("Please provide your Gemini API key. Do not embed it in code!")
@@ -308,6 +308,9 @@ def sanitize_input(input_string):
     """Sanitize the input by removing special characters."""
     return re.sub(r"[\'\":,]", "", input_string)
 
+
+ID_FILE = "last_product_id.txt"
+
 @app.route('/007PageLoginAdminThe007', methods=['GET', 'POST'])
 def index():
     products = load_products()
@@ -365,8 +368,17 @@ def index():
         if category not in products:
             products[category] = []
 
-        # Assign a new product ID
-        product_id = 2000 + sum(len(items) for items in products.values())
+        if os.path.exists(ID_FILE):
+            with open(ID_FILE, "r") as file:
+                last_product_id = int(file.read().strip())
+        else:
+            last_product_id = 2000  # Default starting ID
+
+        product_id = last_product_id + 1  # Increment product ID
+
+        # ✅ Save updated product ID to file
+        with open(ID_FILE, "w") as file:
+            file.write(str(product_id))
 
         # ✅ Image handling
         file = request.files['image']
