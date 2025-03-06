@@ -1158,13 +1158,18 @@ function closeCartPopup() {
 
 // Clear all items from cart
 function clearCart() {
-    fetch('/clear-cart', { method: 'POST' })
-    .then(response => response.json())
-    .then(result => {
-        alert(result.message);
-        closeCartPopup();
-        viewCart();  // Refresh cart view
-    });
+    const confirmation = confirm("Are you sure you want to clear the cart?");
+    
+    if (confirmation) {
+        fetch('/clear-cart', { method: 'POST' })
+        .then(response => response.json())
+        .then(result => {
+            alert(result.message);
+            closeCartPopup();
+            viewCart();  // Refresh cart view
+        })
+        .catch(error => console.error("Error clearing cart:", error));
+    }
 }
 
 // Remove only out-of-stock items
