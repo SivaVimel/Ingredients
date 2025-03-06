@@ -1236,7 +1236,9 @@ function closeReportPopup() {
                 fontSize: 9, 
                 cellPadding: 4,
                 halign: 'center',  // Center text in cells
-                valign: 'middle'    // Vertically align to middle
+                valign: 'middle',    // Vertically align to middle
+                lineWidth: 0.75,
+                lineColor: [0,0,0]
             },
             columnStyles: { 
                 0: { cellWidth: 'auto' } 
@@ -1244,7 +1246,7 @@ function closeReportPopup() {
             margin: { left: 5, right: 5 },
             tableWidth: 'auto',
             tableLineWidth: 0.75, // Increase thickness of column lines
-            tableLineColor: [0, 0, 0] // Black color for table lines
+            tableLineColor: [0, 0, 0] // Black color for table line
         });
 
         startY = doc.lastAutoTable.finalY + 10; // Move to next position for next user
