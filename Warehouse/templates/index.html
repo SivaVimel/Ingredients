@@ -1217,9 +1217,10 @@ function closeReportPopup() {
             body: userOrders[username],
             startY: startY,
             theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 4 },
+            styles: { fontSize: 9, cellPadding: 4, halign: 'center', valign: 'middle' },
             columnStyles: { 0: { cellWidth: 'auto' } }, 
             margin: { left: 5, right: 5 },
+            tableLineWidth: 0.75,
             tableWidth: 'auto',
         });
 
