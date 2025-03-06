@@ -1167,29 +1167,44 @@ function closeReportPopup() {
 
     // Extract headers, skipping columns: 1st (0), 2nd (1), 5th (4), and last
     const thElements = table.querySelectorAll("thead th");
+    let reorderedHeaders = [];
+    let headerIndexMap = []; // Track the indexes of selected columns
+
     thElements.forEach((th, index) => {
         if (index !== 0 && index !== 1 && index !== 4 && index < thElements.length - 1) {
-            headers.push(th.innerText);
+            reorderedHeaders.push(th.innerText);
+            headerIndexMap.push(index);
         }
     });
+
+    // Swap first and second headers
+    if (reorderedHeaders.length > 1) {
+        [reorderedHeaders[0], reorderedHeaders[1]] = [reorderedHeaders[1], reorderedHeaders[0]];
+    }
 
     // Group rows by username
     rows.forEach(row => {
         if (row.style.display !== "none") {
             const cells = row.querySelectorAll("td");
 
-            // Extract username from the first column
             if (cells.length > 0) {
                 const firstColumnText = cells[0].innerText;
                 let username = firstColumnText.includes(" | ") ? firstColumnText.split(" | ")[1].trim() : "Unknown";
 
-                // Skip columns: 1st (0), 2nd (1), 5th (4), and last
-                const rowData = [];
-                cells.forEach((cell, index) => {
-                    if (index !== 0 && index !== 1 && index !== 4 && index < cells.length - 1) {
-                        rowData.push(cell.innerText);
-                    }
+                let rowData = [];
+                let extractedValues = []; 
+
+                // Extract the required columns using headerIndexMap
+                headerIndexMap.forEach(index => {
+                    extractedValues.push(cells[index].innerText);
                 });
+
+                // Swap the first and second extracted values
+                if (extractedValues.length > 1) {
+                    [extractedValues[0], extractedValues[1]] = [extractedValues[1], extractedValues[0]];
+                }
+
+                rowData = extractedValues; // Assign corrected order
 
                 if (!userOrders[username]) {
                     userOrders[username] = [];
@@ -1213,15 +1228,23 @@ function closeReportPopup() {
 
         // Generate table for this user
         doc.autoTable({
-            head: [headers],
+            head: [reorderedHeaders], // Use reordered headers
             body: userOrders[username],
             startY: startY,
             theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 4, halign: 'center', valign: 'middle' },
-            columnStyles: { 0: { cellWidth: 'auto' } }, 
+            styles: { 
+                fontSize: 9, 
+                cellPadding: 4,
+                halign: 'center',  // Center text in cells
+                valign: 'middle'    // Vertically align to middle
+            },
+            columnStyles: { 
+                0: { cellWidth: 'auto' } 
+            }, 
             margin: { left: 5, right: 5 },
-            tableLineWidth: 0.75,
             tableWidth: 'auto',
+            tableLineWidth: 0.75, // Increase thickness of column lines
+            tableLineColor: [0, 0, 0] // Black color for table lines
         });
 
         startY = doc.lastAutoTable.finalY + 10; // Move to next position for next user
