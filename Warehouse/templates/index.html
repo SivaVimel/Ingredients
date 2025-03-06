@@ -1153,55 +1153,79 @@ function closeReportPopup() {
         function generatePDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
-        orientation: "portrait", // Set to landscape for better table fit
-        unit: "pt", // Use points for precise scaling
-        format: "A4" // Standard A4 size
+        orientation: "portrait",
+        unit: "pt",
+        format: "A4"
     });
 
-    // Get the table element
     const table = document.getElementById('ordersTable');
 
-    // Extract table rows and filter out the "Actions" column
-    const headers = [];
-    const data = [];
+    let userOrders = {}; // Object to store orders grouped by username
 
-    // Select table headers, skipping the last one (Actions)
+    const headers = [];
+    const rows = table.querySelectorAll("tbody tr");
+
+    // Extract headers, skipping columns: 1st (0), 2nd (1), 5th (4), and last
     const thElements = table.querySelectorAll("thead th");
     thElements.forEach((th, index) => {
-        if (index < thElements.length - 1) { // Skip the last column
+        if (index !== 0 && index !== 1 && index !== 4 && index < thElements.length - 1) {
             headers.push(th.innerText);
         }
     });
 
-    // Select only VISIBLE rows and exclude the last column
-    const rows = table.querySelectorAll("tbody tr");
+    // Group rows by username
     rows.forEach(row => {
-        if (row.style.display !== "none") { // Check if the row is visible
-            const rowData = [];
+        if (row.style.display !== "none") {
             const cells = row.querySelectorAll("td");
-            cells.forEach((cell, index) => {
-                if (index < cells.length - 1) { // Skip the last column
-                    rowData.push(cell.innerText);
+
+            // Extract username from the first column
+            if (cells.length > 0) {
+                const firstColumnText = cells[0].innerText;
+                let username = firstColumnText.includes(" | ") ? firstColumnText.split(" | ")[1].trim() : "Unknown";
+
+                // Skip columns: 1st (0), 2nd (1), 5th (4), and last
+                const rowData = [];
+                cells.forEach((cell, index) => {
+                    if (index !== 0 && index !== 1 && index !== 4 && index < cells.length - 1) {
+                        rowData.push(cell.innerText);
+                    }
+                });
+
+                if (!userOrders[username]) {
+                    userOrders[username] = [];
                 }
-            });
-            data.push(rowData);
+                userOrders[username].push(rowData);
+            }
+        }
+    });
+
+    let startY = 20; // Initial Y position
+
+    Object.keys(userOrders).forEach((username, index) => {
+        if (index > 0) {
+            startY += 20; // Add space between sections
         }
 
+        // Add username heading
+        doc.setFontSize(14);
+        doc.text(`Client: ${username}`, 20, startY);
+        startY += 20; // Move down for the table
+
+        // Generate table for this user
+        doc.autoTable({
+            head: [headers],
+            body: userOrders[username],
+            startY: startY,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 4 },
+            columnStyles: { 0: { cellWidth: 'auto' } }, 
+            margin: { left: 5, right: 5 },
+            tableWidth: 'auto',
+        });
+
+        startY = doc.lastAutoTable.finalY + 10; // Move to next position for next user
     });
 
-    // Use jsPDF's autoTable plugin to convert the filtered table into a PDF
-    doc.autoTable({
-        head: [headers],
-        body: data,
-        startY: 20,
-        theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 4 }, // Set font size to 14
-        columnStyles: { 0: { cellWidth: 'auto' } }, 
-        margin: { left: 5, right: 5 }, // Reduce margins
-        tableWidth: 'auto',
-    });
-
-    // Save the PDF with a name (optional)
     doc.save('Orders.pdf');
 }
 
