@@ -1131,18 +1131,30 @@ function updateCartItem(productId) {
     });
 }
 
+let orderSubmitted = false;  // Prevent multiple submissions
+
 function submitCart() {
-    fetch('/submit-cart', {
-        method: 'POST',
-    })
+    if (orderSubmitted) {
+        return; // Prevent duplicate orders
+    }
+
+    orderSubmitted = true;  // Mark order as submitted
+
+    fetch('/submit-cart', { method: 'POST' })
     .then(response => response.json())
     .then(result => {
         if (result.success) {
             alert("Order placed successfully!");
-            window.location.reload();  // Reload the page to reflect changes
+            window.location.reload();  // Refresh page
         } else {
-            alert(result.message);  // Show the detailed error message
+            alert(result.message);  // Show error message but prevent resubmission
+            orderSubmitted = false;  // Allow retry if needed
+            viewCart();  // Refresh cart view
         }
+    })
+    .catch(error => {
+        console.error("Error submitting order:", error);
+        orderSubmitted = false;  // Reset in case of failure
     });
 }
 
