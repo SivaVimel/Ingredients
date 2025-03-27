@@ -880,7 +880,7 @@ def adjust_out_of_stock():
         if product:
             try:
                 available_stock = int(product[5])
-            except ValueError:
+            except:
                 available_stock = float(product[5])  # Handle float stock if necessary
 
             if available_stock > 0:
@@ -1021,7 +1021,10 @@ def submit_cart():
         for category, items in products.items():
             for product in items:
                 if product[0] == product_id:
-                    available_stock = int(product[5])
+                    try:
+                        available_stock = int(product[5])
+                    except:
+                        available_stock = float(product[5])  # Handle float stock if necessary
 
                     if available_stock == 0:
                         insufficient_stock.append(f"{product[1]} (Out of stock)")
