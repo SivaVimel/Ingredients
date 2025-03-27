@@ -695,7 +695,10 @@ def parse_orders():
                     continue
                 
                 # Correct extraction
-                quantity = int(details[2].strip())  # Second item is the quantity
+                try:
+                    quantity = int(details[2].strip())  # Second item is the quantity
+                except:
+                    quantity = float(details[2].strip())  # Second item is the quantity
                 product = details[3].strip()       # Fourth item is the product
                 category = details[4].strip()      # Fifth item is the category
 
@@ -1073,10 +1076,17 @@ def remove_out_of_stock():
 
     for item in cart:
         product = next((p for category in products.values() for p in category if p[0] == item['product_id']), None)
-        if product and int(product[5]) > 0:
-            updated_cart.append(item)
-        else:
-            removed_items.append(product[1])
+        
+        try:
+            if product and int(product[5]) > 0:
+                updated_cart.append(item)
+            else:
+                removed_items.append(product[1])
+        except:
+            if product and float(product[5]) > 0:
+                updated_cart.append(item)
+            else:
+                removed_items.append(product[1])
 
     save_cart(username, updated_cart)
 
@@ -1104,7 +1114,10 @@ def delete_order2():
         return jsonify({"success": False})
 
     # Filter out the order to delete
-    updated_orders = [order for order in orders if not (int(order[1]) == product_id and int(order[2]) == order_quantity)]
+    try:
+        updated_orders = [order for order in orders if not (int(order[1]) == product_id and int(order[2]) == order_quantity)]
+    except:
+        updated_orders = [order for order in orders if not (float(order[1]) == product_id and float(order[2]) == order_quantity)]
     
     # Write updated orders back to Orders.txt
     with open("data/Orders.txt", "w") as f:
@@ -1342,4 +1355,4 @@ def place_order():
 if __name__ == '__main__':
     # Ensure the data directory exists
     os.makedirs(os.path.dirname(PRODUCTS_FILE), exist_ok=True)
-    app.run(debug=True, host="0.0.0.0"
+    app.run(debug=True, host="0.0.0.0")
