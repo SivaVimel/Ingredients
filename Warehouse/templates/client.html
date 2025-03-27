@@ -485,6 +485,8 @@ window.onload = function() {
     tables.forEach(function(table) {
         table.style.display = "block";  // Set all tables to be visible on load
     });
+    updateQuantities();  // Initial load
+    setInterval(updateQuantities, 250);  // Periodic updates
 };
 
         // Function to display the popup with the clicked image
@@ -856,7 +858,7 @@ document.getElementById("searchInput").addEventListener("focus", function () {
                         <th>ID</th>
                         <th>Name</th>
                         <th>Category</th>
-                        <th>Selling Price</th>
+                        <th>Price</th>
                         <th>Quantity</th>
                         <th>Expiry</th>
                         <th>Image</th>
@@ -945,7 +947,7 @@ document.getElementById("searchInput").addEventListener("focus", function () {
                                     <th>ID</th>
                                     <th>Name</th>
                                     <th>Category</th>
-                                    <th>Selling Price</th>
+                                    <th>Price</th>
                                     <th>Quantity</th>
                                     <th>Expiry</th>
                                     <th>Image</th>
@@ -958,7 +960,7 @@ document.getElementById("searchInput").addEventListener("focus", function () {
                                         <td>${product[0]}</td>
                                         <td>${product[1]}</td>
                                         <td>${product[2]}</td>
-                                        <td>${product[4]}</td>
+                                        <td>${parseFloat(product[4]).toFixed(2)}</td>
                                         <td>
                                             ${product[5] == 0 
                                                 ? `<button type="button" class="notify-button" style="font-size:large; background-color: #f44336; color: #fff;" onclick="sendNotifyRequest('${product[0]}', '${product[1]}', '${product[2]}')">Notify</button>`
@@ -1015,6 +1017,31 @@ document.getElementById("searchInput").addEventListener("focus", function () {
             loadMoreProducts();
         }
     });
+
+    async function updateQuantities() {
+        try {
+            let response = await fetch("/get_quantity");
+            let quantities = await response.json();
+    
+            for (let productId in quantities) {
+                let quantityCell = document.querySelector(`#product-${productId} td:nth-child(5)`);
+                if (quantityCell) {
+                    let newQuantity = quantities[productId];
+    
+                    if (newQuantity == 0) {
+                        quantityCell.innerHTML = `<button type="button" class="notify-button" style="font-size:large; background-color: #f44336; color: #fff;" onclick="sendNotifyRequest('${productId}')">Notify</button>`;
+                    } else {
+                        quantityCell.innerHTML = newQuantity;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error updating quantities:", error);
+        }
+    }
+    
+    // Update every 5 seconds
+    setInterval(updateQuantities, 250);
 
     window.onload = loadMoreProducts;
     </script>
