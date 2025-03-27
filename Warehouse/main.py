@@ -113,7 +113,7 @@ def get_top_clients():
     """Read Orders.txt and return a dictionary of total orders per client."""
     client_orders = defaultdict(int)
 
-    with open(ORDERS_FILE, "r") as file:
+    with open("data/OrderHistory.txt", "r") as file:
         for line in file:
             parts = line.strip().split(" | ")
             if len(parts) < 2:
@@ -125,9 +125,9 @@ def get_top_clients():
             
             client = details[0]  # Client name
             try:
-                quantity = int(details[1])  # Order quantity
+                quantity = int(details[2])  # Order quantity
             except:
-                quantity = float(details[1])  # Order quantity
+                quantity = float(details[2])  # Order quantity
             
             client_orders[client] += quantity  # Aggregate orders
 
@@ -505,6 +505,18 @@ def client():
     )
 
 
+@app.route('/get_quantity')
+def get_quantity():
+    products = load_products()  # Function that loads Products.txt as a dictionary
+    quantities = {}
+
+    for category, items in products.items():
+        for product in items:
+            product_id = product[0]  # Unique ID
+            quantity = product[5]  # Quantity value
+            quantities[product_id] = quantity
+    
+    return jsonify(quantities)
 
 @app.route('/chat1', methods=['POST'])
 def chat1():
@@ -671,7 +683,7 @@ def parse_orders():
     products = defaultdict(lambda: defaultdict(int))  # Aggregate products within categories
 
     try:
-        with open(ORDERS_FILE, "r") as file:
+        with open("data/OrderHistory.txt", "r") as file:
             for line in file:
                 parts = line.strip().split("|")
                 if len(parts) < 2:  # Ensure enough components exist
