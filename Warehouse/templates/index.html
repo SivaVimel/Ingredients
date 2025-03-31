@@ -1233,8 +1233,9 @@ function closeReportPopup() {
             startY: startY,
             theme: 'grid',
             styles: { 
-                fontSize: 9, 
-                cellPadding: 4,
+                fontSize: 12, 
+                fontStyle: 'bold',  // Make text bold
+                cellPadding: 6,
                 halign: 'center',  // Center text in cells
                 valign: 'middle',    // Vertically align to middle
                 lineWidth: 0.75,
@@ -1287,25 +1288,31 @@ function generatePDF2() {
 }
 
 function clearOrders() {
-    // Send a request to the server to clear the orders.txt file
-    fetch('/clearorders', {
-        method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Orders have been cleared.');
-            // Optionally, you can clear the table content on the front end as well
-            document.getElementById('ordersTableBody').innerHTML = '';
-        } else {
-            alert('Failed to clear orders.');
-        }
-    })
-    .catch(error => {
-        console.error('Error clearing orders:', error);
-        alert('An error occurred while clearing orders.');
-    });
+    // Show a confirmation pop-up
+    if (confirm("Are you sure you want to clear all orders? This action cannot be undone!")) {
+        // Send a request to the server to clear the orders.txt file
+        fetch('/clearorders', {
+            method: 'POST',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Orders have been cleared.');
+                // Optionally, clear the table content on the front end
+                document.getElementById('ordersTableBody').innerHTML = '';
+            } else {
+                alert('Failed to clear orders.');
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing orders:', error);
+            alert('An error occurred while clearing orders.');
+        });
+    } else {
+        alert("Order clearing canceled."); // Optional feedback for the user
+    }
 }
+
 
 function clearnotify() {
     // Send a request to the server to clear the orders.txt file
