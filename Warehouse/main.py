@@ -1231,8 +1231,6 @@ def logoutindex():
 def notify():
     data = request.get_json()
     product_id = data.get("product_id")
-    product_name = data.get("product_name")
-    product_category = data.get("product_category")
     username = session.get("username", "Guest")
 
     # Get the current time in Ireland timezone
@@ -1240,7 +1238,7 @@ def notify():
     current_time = datetime.now(ireland_tz).strftime('%Y-%m-%d %H:%M:%S')
 
     # Save the notification details to notify.txt with timestamp
-    notification_message = f"{current_time} : {username} asked for more stocks of Product ID: {product_id}, Name: {product_name}, Category: {product_category}\n"
+    notification_message = f"{current_time} : {username} asked for more stocks of Product ID: {product_id}\n"
     with open("data/notify.txt", "a") as f:
         f.write(notification_message)
 
